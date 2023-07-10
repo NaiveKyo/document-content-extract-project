@@ -1,6 +1,7 @@
 package io.naivekyo.content.impl;
 
 import io.naivekyo.content.ContentHelper;
+import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
 
 import java.util.Objects;
@@ -35,8 +36,8 @@ public class TextContent implements DocContent {
     }
 
     @Override
-    public String getType() {
-        return "text";
+    public ContentType getType() {
+        return ContentType.TEXT;
     }
 
     /**

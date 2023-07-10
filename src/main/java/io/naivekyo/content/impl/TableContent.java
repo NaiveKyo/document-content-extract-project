@@ -1,6 +1,7 @@
 package io.naivekyo.content.impl;
 
 import io.naivekyo.content.ContentHelper;
+import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
 
 import java.util.ArrayList;
@@ -76,8 +77,8 @@ public class TableContent implements DocContent {
     }
 
     @Override
-    public String getType() {
-        return "table";
+    public ContentType getType() {
+        return ContentType.TABLE;
     }
 
     public static class TableContentBuilder {

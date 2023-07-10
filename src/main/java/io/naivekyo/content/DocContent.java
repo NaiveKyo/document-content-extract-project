@@ -25,6 +25,6 @@ public interface DocContent {
      * 返回当前内容的类型
      * @return 内容的类型
      */
-    String getType();
+    ContentType getType();
     
 }

@@ -1,6 +1,7 @@
 package io.naivekyo.content.impl;
 
 import io.naivekyo.content.ContentHelper;
+import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
 
 import java.io.IOException;
@@ -52,8 +53,8 @@ public class ImageContent implements DocContent {
     }
 
     @Override
-    public String getType() {
-        return "image";
+    public ContentType getType() {
+        return ContentType.IMAGE;
     }
 
     /**
