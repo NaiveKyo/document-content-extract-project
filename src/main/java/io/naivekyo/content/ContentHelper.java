@@ -23,8 +23,11 @@ import java.util.regex.Pattern;
  * @version 1.0
  * @since 2023/7/10 22:25
  */
-public class ContentHelper {
+public final class ContentHelper {
     
+    private ContentHelper() {
+    }
+
     // ================================== text content ============================
 
     /**
