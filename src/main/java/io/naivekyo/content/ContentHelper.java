@@ -5,8 +5,13 @@ import org.apache.poi.xwpf.usermodel.Document;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
@@ -93,6 +98,9 @@ public final class ContentHelper {
         XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_BMP, "bmp");
         XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_WPG, "wpg");
     }
+    
+    // ================================== pdf content ============================
+    
 
     // ================================== static convenient methods ============================
 
@@ -223,6 +231,37 @@ public final class ContentHelper {
         if (reader == null)
             return null;
         return reader.getFormatName();
+    }
+
+    /**
+     * 从图片输入流中提取所有字节
+     * @param is 图片输入流
+     * @return  存储图片所有字节的数组
+     * @throws IOException IO 异常
+     */
+    public static byte[] getImageBytes(InputStream is) throws IOException {
+        if (is == null)
+            throw new NullPointerException("图片输入流不能为 null");
+        BufferedInputStream bis = new BufferedInputStream(is, 4096);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buf = new byte[4096];
+        int len = -1;
+        while ((len = bis.read(buf)) != -1) {
+            baos.write(buf, 0, len);
+        }
+        return baos.toByteArray();
+    }
+
+    /**
+     * 将图片持久化到指定的目录
+     * @param image {@link BufferedImage}
+     * @param type 图片类型, png、jpeg
+     * @param file  目标文件
+     * @return 成功或失败
+     * @throws IOException 异常
+     */
+    public static boolean saveImage(BufferedImage image, String type, File file) throws IOException {
+        return ImageIO.write(image, type, file);
     }
 
     /**

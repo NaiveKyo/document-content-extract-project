@@ -41,7 +41,9 @@ buildNumber.properties
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff
-/.idea/**
+.idea/
+*.iml
+/**/*.iml
 
 # Generated files
 .idea/**/contentModel.xml

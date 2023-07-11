@@ -50,4 +50,14 @@ public class DocExtractorTest {
         contents.stream().map(DocContent::getHTMLWrapContent).forEach(System.out::println);
     }
     
+    @Test
+    public void testPDFFileExtract() {
+        // -Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider
+        // System.setProperty("sun.java2d.cmm", "sun.java2d.cmm.kcms.KcmsServiceProvider");
+        // System.out.println(System.getProperty("sun.java2d.cmm"));
+        ContentExtractor extractor = ExtractorHelper.createPDFFileExtractor(is);
+        List<DocContent> contents = extractor.extract();
+        // contents.stream().map(DocContent::getHTMLWrapContent).forEach(System.out::println);
+    }
+    
 }
