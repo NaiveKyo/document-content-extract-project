@@ -171,10 +171,7 @@ public final class ContentHelper {
      */
     public static String cleanWordText(String wordText) {
         if (wordText == null)
-            throw new RuntimeException("文本内容不能为 null");
-        // String cleanText;
-        // cleanText = WORD_SPECIAL_SYMBOL_PATTERN.matcher(wordText).replaceAll("");
-        // return WORD_TAB_SYMBOL_PATTERN.matcher(cleanText).replaceAll("    ");
+            throw new NullPointerException("文本内容不能为 null");
         return WORD_SPECIAL_SYMBOL_PATTERN.matcher(wordText).replaceAll("");
     }
 
@@ -272,4 +269,5 @@ public final class ContentHelper {
     public static String getXWPFPictureType(Integer type) {
         return XWPF_PICTURE_TYPE.get(type);
     }
+    
 }

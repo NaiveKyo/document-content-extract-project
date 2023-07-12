@@ -2,7 +2,8 @@ package io.naivekyo.extractor.impl;
 
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.extractor.AbstractContentExtractor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,9 +16,10 @@ import java.io.InputStreamReader;
  * @version 1.0
  * @since 2023/7/10 22:36
  */
-@Slf4j
 public class TxtFileContentExtractor extends AbstractContentExtractor {
 
+    private static final Log LOG = LogFactory.getLog(TxtFileContentExtractor.class);
+    
     public TxtFileContentExtractor(InputStream docByteStream) {
         super(docByteStream);
     }
@@ -35,7 +37,6 @@ public class TxtFileContentExtractor extends AbstractContentExtractor {
             }
         } catch (IOException e) {
             ex = e;
-            log.error("读取文本行时出现异常", e);
         } finally {
             try {
                 br.close();

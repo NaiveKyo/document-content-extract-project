@@ -3,13 +3,16 @@ package io.naivekyo;
 import io.naivekyo.content.DocContent;
 import io.naivekyo.extractor.ContentExtractor;
 import io.naivekyo.extractor.ExtractorHelper;
+import io.naivekyo.support.IOUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 测试类
@@ -57,7 +60,8 @@ public class DocExtractorTest {
         // System.out.println(System.getProperty("sun.java2d.cmm"));
         ContentExtractor extractor = ExtractorHelper.createPDFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
-        // contents.stream().map(DocContent::getHTMLWrapContent).forEach(System.out::println);
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
     
 }

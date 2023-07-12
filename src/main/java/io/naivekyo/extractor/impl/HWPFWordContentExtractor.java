@@ -4,7 +4,8 @@ import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.impl.ImageContent;
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.extractor.AbstractContentExtractor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hwpf.HWPFDocument;
 import org.apache.poi.hwpf.model.PicturesTable;
 import org.apache.poi.hwpf.usermodel.CharacterRun;
@@ -21,8 +22,9 @@ import java.io.InputStream;
  * @version 1.0
  * @since 2023/7/10 22:37
  */
-@Slf4j
 public class HWPFWordContentExtractor extends AbstractContentExtractor {
+
+    private static final Log LOG = LogFactory.getLog(HWPFWordContentExtractor.class);
     
     public HWPFWordContentExtractor(InputStream docByteStream) {
         super(docByteStream);
@@ -55,7 +57,7 @@ public class HWPFWordContentExtractor extends AbstractContentExtractor {
                         }
                         String formatName = ContentHelper.getImageFileType(imgBytes);
                         if (formatName == null || "".equals(formatName))
-                            log.error("word 类型: doc, 解析文件中的图片内容时, 未找到对应的 ImageReader, 图片 mime-type: {}", mimeType);
+                            LOG.error(String.format("word 类型: doc, 解析文件中的图片内容时, 未找到对应的 ImageReader, 图片 mime-type: %s", mimeType));
                         else
                             this.getContents().add(new ImageContent(imgBytes, mimeType, formatName));
                     } else {

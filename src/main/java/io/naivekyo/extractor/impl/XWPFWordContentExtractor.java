@@ -5,7 +5,8 @@ import io.naivekyo.content.impl.ImageContent;
 import io.naivekyo.content.impl.TableContent;
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.extractor.AbstractContentExtractor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.poi.xwpf.usermodel.BodyElementType;
 import org.apache.poi.xwpf.usermodel.IBodyElement;
 import org.apache.poi.xwpf.usermodel.ICell;
@@ -31,9 +32,10 @@ import java.util.List;
  * @version 1.0
  * @since 2023/7/10 22:39
  */
-@Slf4j
 public class XWPFWordContentExtractor extends AbstractContentExtractor {
 
+    private static final Log LOG = LogFactory.getLog(XWPFWordContentExtractor.class);
+    
     public XWPFWordContentExtractor(InputStream docByteStream) {
         super(docByteStream);
     }
@@ -127,7 +129,7 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
                     byte[] data = pictureData.getData();
                     String type = ContentHelper.getXWPFPictureType(pictureData.getPictureType());
                     if (type == null)
-                        log.error("word 类型: docx, 解析时出现未知的图片类型, picture type: {}", pictureData.getPictureType());
+                        LOG.error(String.format("word 类型: docx, 解析时出现未知的图片类型, picture type: %s", pictureData.getPictureType()));
                     this.getContents().add(new ImageContent(data, type));
                 }
             } else {
