@@ -22,15 +22,12 @@ import java.util.stream.Collectors;
  */
 public class DocExtractorTest {
     
-    public static final String FILE_PATH = "";
-    
     public static InputStream is = null;
     
     @BeforeAll
     public static void beforeAll() throws FileNotFoundException {
         is = new FileInputStream(FILE_PATH);
     }
-    
     
     @Test
     public void testTxtFileExtract() {
@@ -64,4 +61,13 @@ public class DocExtractorTest {
         IOUtils.writeToTxtFile(new File(""), collect);
     }
     
+    @Test
+    public void testHSLFFileExtract() {
+        ContentExtractor extractor = ExtractorHelper.createHSLFFileExtractor(is);
+        List<DocContent> contents = extractor.extract();
+        
+    }
+
+    public static final String FILE_PATH = "";
+
 }

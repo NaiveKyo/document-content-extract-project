@@ -111,7 +111,7 @@ public final class ContentHelper {
      */
     public static String convertTextToHTML(String content) {
         if (content == null)
-            throw new RuntimeException("文本内容不能为 null");
+            throw new NullPointerException("文本内容不能为 null");
         Matcher matcher = HTML_LABEL_PATTERN.matcher(content);
         if (matcher.matches()) {
             content = matcher.replaceAll(SAFE_SCRIPT_STR);

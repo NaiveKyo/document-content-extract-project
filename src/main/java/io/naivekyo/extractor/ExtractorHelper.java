@@ -1,8 +1,10 @@
 package io.naivekyo.extractor;
 
+import io.naivekyo.extractor.impl.HSLFPPTContentExtractor;
 import io.naivekyo.extractor.impl.HWPFWordContentExtractor;
 import io.naivekyo.extractor.impl.PDFFileContentExtractor;
 import io.naivekyo.extractor.impl.TxtFileContentExtractor;
+import io.naivekyo.extractor.impl.XSLFPPTContentExtractor;
 import io.naivekyo.extractor.impl.XWPFWordContentExtractor;
 
 import java.io.InputStream;
@@ -52,6 +54,24 @@ public final class ExtractorHelper {
      */
     public static ContentExtractor createPDFFileExtractor(InputStream is) {
         return new PDFFileContentExtractor(is);
+    }
+
+    /**
+     * factory method: create .ppt file extractor
+     * @param is 文档输入流
+     * @return .ppt 文件内容抽取器实例
+     */
+    public static ContentExtractor createHSLFFileExtractor(InputStream is) {
+        return new HSLFPPTContentExtractor(is);
+    }
+
+    /**
+     * factory method: create .pptx file extractor
+     * @param is 文档输入流
+     * @return .pptx 文件内容抽取器实例
+     */
+    public static ContentExtractor createXSLFFileExtractor(InputStream is) {
+        return new XSLFPPTContentExtractor(is);
     }
     
 }
