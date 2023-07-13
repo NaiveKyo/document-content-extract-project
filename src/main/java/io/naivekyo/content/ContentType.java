@@ -7,13 +7,35 @@ package io.naivekyo.content;
  * @since 2023/7/10 22:22
  */
 public enum ContentType {
-    
-    IMAGE("image"), TEXT("text"), TABLE("table");
 
-    private String name;
+    /**
+     * 图片内容
+     */
+    IMAGE("image"),
+
+    /**
+     * 文本内容
+     */
+    TEXT("text"),
+
+    /**
+     * 表格内容
+     */
+    TABLE("table"),
+
+    /**
+     * 带标题的有序/无需列表
+     */
+    LIST("list");
+
+    private final String name;
 
     ContentType(String name) {
         this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
     
 }

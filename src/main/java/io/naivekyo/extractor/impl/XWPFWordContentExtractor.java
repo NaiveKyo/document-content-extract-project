@@ -5,6 +5,8 @@ import io.naivekyo.content.impl.ImageContent;
 import io.naivekyo.content.impl.TableContent;
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.extractor.AbstractContentExtractor;
+import io.naivekyo.support.IOUtils;
+import io.naivekyo.support.word.ImageType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.xwpf.usermodel.BodyElementType;
@@ -118,19 +120,29 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
      * 抽取段落内容
      * @param p {@link XWPFParagraph}
      */
-    private void extractParagraphContent(XWPFParagraph p) {
+    private void extractParagraphContent(XWPFParagraph p) throws IOException {
         List<XWPFRun> runs = p.getRuns();
         StringBuilder sb = null;
         for (XWPFRun r : runs) {
             List<XWPFPicture> embeddedPictures = r.getEmbeddedPictures();
-            if (embeddedPictures != null && embeddedPictures.size() > 0) {  // 图片来源可能是: 插入的图片、内嵌的图片、画布
+            if (embeddedPictures != null && embeddedPictures.size() > 0) {
+                // 图片来源可能是: 插入的图片、内嵌的图片、画布
                 for (XWPFPicture picture : embeddedPictures) {
                     XWPFPictureData pictureData = picture.getPictureData();
                     byte[] data = pictureData.getData();
-                    String type = ContentHelper.getXWPFPictureType(pictureData.getPictureType());
-                    if (type == null)
-                        LOG.error(String.format("word 类型: docx, 解析时出现未知的图片类型, picture type: %s", pictureData.getPictureType()));
-                    this.getContents().add(new ImageContent(data, type));
+                    int typeId = pictureData.getPictureType();
+                    ImageType imageType = ImageType.lookupByTypeId(typeId);
+                    if (ImageType.UNKNOWN.equals(imageType)) {
+                        LOG.error(String.format("word 类型: docx, 解析时出现未知的图片类型, org.apache.poi.xwpf.usermodel.Document.PICTURE_TYPE: %s", pictureData.getPictureType()));
+                        continue;
+                    } else if (ImageType.WMF.equals(imageType)) {
+                        data = IOUtils.convertWMFToPNG(data);
+                        imageType = ImageType.PNG;
+                    } else if (ImageType.EMF.equals(imageType)) {
+                        data = IOUtils.convertEMFToPNG(data);
+                        imageType = ImageType.PNG;
+                    }
+                    this.getContents().add(new ImageContent(data, imageType.getMimeType(), imageType.getName()));
                 }
             } else {
                 // 抽取文本

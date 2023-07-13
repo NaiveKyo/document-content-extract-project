@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 扩展 PDFGraphicsStreamEngine 定制图片处理方案
@@ -36,11 +35,6 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
     private static final Object DUMMY_OBJ = new Object();
     
     private int pageNum;
-
-    /**
-     * 文件命名计数器
-     */
-    private AtomicInteger count = new AtomicInteger(0);
 
     /**
      * 图片去重使用的 map
@@ -105,9 +99,13 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
             PDImageXObject imageXObject = (PDImageXObject) pdImage;
             if (distinct) {
                 String fileType = imageXObject.getSuffix();
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(image, fileType, baos);
-                this.contents.add(new ImageContent(baos.toByteArray(), fileType));
+                if (fileType == null) {
+                    LOG.error("解析 .pdf 文件时, 从 PDImageXObject 读取到未知的图片类型");
+                } else {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ImageIO.write(image, fileType, baos);
+                    this.contents.add(new ImageContent(baos.toByteArray(), fileType));
+                }
             }
         } else if (pdImage instanceof PDInlineImage) {
             // pdf 中使用特殊表达式生成的图片
@@ -119,7 +117,7 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
                 this.contents.add(new ImageContent(baos.toByteArray(), fileType));
             }
         } else {
-            LOG.error("未知的 pdf 图片类型");
+            LOG.error(String.format("未知的 pdf 图片类型, %s", pdImage.getClass().getName()));
         }
     }
 

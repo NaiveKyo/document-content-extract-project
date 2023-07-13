@@ -19,7 +19,7 @@ public class TableContent implements DocContent {
     /**
      * 表格采用二维数组格式, row + col
      */
-    private List<List<String>> rawContent;
+    private final List<List<String>> rawContent;
 
     /**
      * 表格的总行数

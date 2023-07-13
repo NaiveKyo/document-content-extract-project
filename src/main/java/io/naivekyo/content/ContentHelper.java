@@ -1,24 +1,15 @@
 package io.naivekyo.content;
 
-import org.apache.poi.xwpf.usermodel.Document;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,27 +68,6 @@ public final class ContentHelper {
      * 图片内容的 html 渲染字符串, 使用 .doc-image-box css 类标记
      */
     private static final String IMAGE_HTML_WRAPPER = "<div class=\"doc-image-box\"><img src=\"data:image/%s;base64,%s\"></img></div>";
-
-    /**
-     * poi-ooxml 中定义的 .docx 文件中嵌入的图片的类型 <br/>
-     * 参考: {@link Document}
-     */
-    private static final Map<Integer, String> XWPF_PICTURE_TYPE;
-
-    static {
-        XWPF_PICTURE_TYPE = new HashMap<>();
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_EMF, "emf");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_WMF, "wmf");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_PICT, "pict");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_JPEG, "jpeg");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_PNG, "png");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_DIB, "dib");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_GIF, "gif");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_TIFF, "tiff");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_EPS, "eps");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_BMP, "bmp");
-        XWPF_PICTURE_TYPE.put(Document.PICTURE_TYPE_WPG, "wpg");
-    }
     
     // ================================== pdf content ============================
     
@@ -228,46 +198,6 @@ public final class ContentHelper {
         if (reader == null)
             return null;
         return reader.getFormatName();
-    }
-
-    /**
-     * 从图片输入流中提取所有字节
-     * @param is 图片输入流
-     * @return  存储图片所有字节的数组
-     * @throws IOException IO 异常
-     */
-    public static byte[] getImageBytes(InputStream is) throws IOException {
-        if (is == null)
-            throw new NullPointerException("图片输入流不能为 null");
-        BufferedInputStream bis = new BufferedInputStream(is, 4096);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int len = -1;
-        while ((len = bis.read(buf)) != -1) {
-            baos.write(buf, 0, len);
-        }
-        return baos.toByteArray();
-    }
-
-    /**
-     * 将图片持久化到指定的目录
-     * @param image {@link BufferedImage}
-     * @param type 图片类型, png、jpeg
-     * @param file  目标文件
-     * @return 成功或失败
-     * @throws IOException 异常
-     */
-    public static boolean saveImage(BufferedImage image, String type, File file) throws IOException {
-        return ImageIO.write(image, type, file);
-    }
-
-    /**
-     * 获取 docx word 文件内嵌的图片类型
-     * @param type {@link Document#PICTURE_TYPE_PNG} etc.
-     * @return docx 文件中图片类型, 比如 png, jpeg, 没有则返回 null
-     */
-    public static String getXWPFPictureType(Integer type) {
-        return XWPF_PICTURE_TYPE.get(type);
     }
     
 }

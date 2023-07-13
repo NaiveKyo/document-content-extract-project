@@ -20,17 +20,17 @@ public class ImageContent implements DocContent {
     /**
      * 存储当前图片的所有字节
      */
-    private byte[] rawData;
+    private final byte[] rawData;
 
     /**
      * 当前图片的 mime 类型, image/unknown 表示未知的类型
      */
-    private String mimeType;
+    private final String mimeType;
 
     /**
      * 图片的类型, 比如 png、jpeg 等等, 要求为全小写字母
      */
-    private String fileType;
+    private final String fileType;
 
     public ImageContent(byte[] rawData, String mimeType, String fileType) {
         this.rawData = rawData;

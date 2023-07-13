@@ -17,7 +17,7 @@ public class TextContent implements DocContent {
     /**
      * 原始内容
      */
-    private String rawContent;
+    private final String rawContent;
 
     public TextContent(String content) {
         if (!ContentHelper.hasText(content))

@@ -4,6 +4,8 @@ import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.impl.ImageContent;
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.extractor.AbstractContentExtractor;
+import io.naivekyo.support.IOUtils;
+import io.naivekyo.support.word.ImageType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hwpf.HWPFDocument;
@@ -51,15 +53,18 @@ public class HWPFWordContentExtractor extends AbstractContentExtractor {
                         Picture picture = picturesTable.extractPicture(characterRun, true);
                         byte[] imgBytes = picture.getContent();
                         String mimeType = picture.getMimeType();
-                        if (mimeType.equals("image/x-wmf")) {
-                            // TODO x-wmf 格式的图片 Java ImageIO 没有提供对应的处理工具, 需要注册对应的 provider 才可以处理
+                        ImageType imageType = ImageType.lookupByMimeType(mimeType);
+                        if (ImageType.UNKNOWN.equals(imageType)) {
+                            LOG.error(String.format("处理 .doc 文件时发现未知的图片类型, 图片 mime-type: %s", mimeType));
                             continue;
+                        } else if (ImageType.WMF.equals(imageType)) {
+                            imgBytes = IOUtils.convertWMFToPNG(imgBytes);
+                            mimeType = ImageType.PNG.getMimeType();
+                        } else if (ImageType.EMF.equals(imageType)) {
+                            imgBytes = IOUtils.convertEMFToPNG(imgBytes);
+                            mimeType = ImageType.PNG.getMimeType();
                         }
-                        String formatName = ContentHelper.getImageFileType(imgBytes);
-                        if (formatName == null || "".equals(formatName))
-                            LOG.error(String.format("word 类型: doc, 解析文件中的图片内容时, 未找到对应的 ImageReader, 图片 mime-type: %s", mimeType));
-                        else
-                            this.getContents().add(new ImageContent(imgBytes, mimeType, formatName));
+                        this.getContents().add(new ImageContent(imgBytes, mimeType, imageType.getName()));
                     } else {
                         // 处理文本
                         String runText = characterRun.text();

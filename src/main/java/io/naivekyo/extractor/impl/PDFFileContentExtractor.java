@@ -35,22 +35,11 @@ import java.util.stream.Collectors;
 
 /**
  * <p>.pdf 文件内容抽取器实现</p>
- * reference:
- * <ul>
- *     <li>
- *         <a href='https://stackoverflow.com/questions/40531871/how-can-i-check-if-pdf-page-is-imagescanned-by-pdfbox-xpdf/40621136#40621136'>
- *         https://stackoverflow.com/questions/40531871/how-can-i-check-if-pdf-page-is-imagescanned-by-pdfbox-xpdf/40621136#40621136
- *         </a>
- *     </li>
- *     <li>
- *         <a href='https://svn.apache.org/viewvc/pdfbox/trunk/examples/src/main/java/org/apache/pdfbox/examples/rendering/CustomGraphicsStreamEngine.java?view=markup'>
- *             https://svn.apache.org/viewvc/pdfbox/trunk/examples/src/main/java/org/apache/pdfbox/examples/rendering/CustomGraphicsStreamEngine.java?view=markup
- *         </a>
- *     </li>
- * </ul>
  * @author NaiveKyo
  * @version 1.0
  * @since 2023/7/10 22:41
+ * @see <a href="https://stackoverflow.com/questions/40531871/how-can-i-check-if-pdf-page-is-imagescanned-by-pdfbox-xpdf/40621136#40621136">stackoverflow-questions-40531871how-can-i-check-if-pdf-page-is-imagescanned-by-pdfbox-xpdf/40621136#40621136</a>
+ * @see <a href="https://svn.apache.org/viewvc/pdfbox/trunk/examples/src/main/java/org/apache/pdfbox/examples/rendering/CustomGraphicsStreamEngine.java?view=markup">apache pdfbox examples: CustomGraphicsStreamEngine.java</a>
  */
 public class PDFFileContentExtractor extends AbstractContentExtractor {
 

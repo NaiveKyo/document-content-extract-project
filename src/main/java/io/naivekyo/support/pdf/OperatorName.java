@@ -1,10 +1,8 @@
 package io.naivekyo.support.pdf;
 
 /**
- * <a href='https://svn.apache.org/viewvc/pdfbox/branches/2.0/pdfbox/src/main/java/org/apache/pdfbox/contentstream/operator/OperatorName.java?revision=1857951&view=markup'>
- *   https://svn.apache.org/viewvc/pdfbox/branches/2.0/pdfbox/src/main/java/org/apache/pdfbox/contentstream/operator/OperatorName.java?revision=1857951&view=markup
- * </a>
- * @deprecated see {@link org.apache.pdfbox.contentstream.operator.OperatorName}
+ * @deprecated prefer to {@link org.apache.pdfbox.contentstream.operator.OperatorName}
+ * @see <a href="https://svn.apache.org/viewvc/pdfbox/branches/2.0/pdfbox/src/main/java/org/apache/pdfbox/contentstream/operator/OperatorName.java?revision=1857951&view=markup">apache pdfbox OperatorName.java</a>
  */
 public class OperatorName {
 
