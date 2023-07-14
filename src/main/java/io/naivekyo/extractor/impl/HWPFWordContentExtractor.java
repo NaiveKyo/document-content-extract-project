@@ -68,7 +68,7 @@ public class HWPFWordContentExtractor extends AbstractContentExtractor {
                     } else {
                         // 处理文本
                         String runText = characterRun.text();
-                        if (!ContentHelper.checkWordValidText(runText))
+                        if (!ContentHelper.checkValidText(runText))
                             continue;
                         if (sb == null)
                             sb = new StringBuilder();
@@ -76,10 +76,7 @@ public class HWPFWordContentExtractor extends AbstractContentExtractor {
                     }
                 }
                 if (sb != null) {
-                    String text = sb.toString();
-                    if (ContentHelper.hasText(text)) {
-                        this.getContents().add(new TextContent(ContentHelper.cleanWordText(text)));
-                    }
+                    this.getContents().add(new TextContent(ContentHelper.cleanExtractedText(sb.toString())));
                 }
             }
         } catch (IOException e) {

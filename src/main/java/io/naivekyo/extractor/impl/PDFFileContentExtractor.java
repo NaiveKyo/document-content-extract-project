@@ -62,13 +62,14 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
             if (canExtract) {
                 int numberOfPages = pdfDocument.getNumberOfPages();
                 for (int i = 1; i <= numberOfPages; i++) {
+                    getContents().add(new TextContent(String.format("第 %d 页", i)));
                     PDPage pdfPage = pdfDocument.getPage(i - 1);
                     // 处理文本
                     String pageText = this.extractByTextStripper(pdfDocument, i);
                     if (pageText != null) {
                         pageText = pageText.trim();
                         String[] split = pageText.split("\r\n");
-                        List<TextContent> texts = Arrays.stream(split).filter(ContentHelper::hasText).map(TextContent::new).collect(Collectors.toList());
+                        List<TextContent> texts = Arrays.stream(split).filter(ContentHelper::checkValidText).map(TextContent::new).collect(Collectors.toList());
                         for (int j = 0; j < texts.size() - 1; j++) {
                             getContents().add(texts.get(j));
                         }
@@ -80,7 +81,6 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
                     List<DocContent> images = engine.getContents();
                     if (images != null && !images.isEmpty())
                         getContents().addAll(images);
-                    getContents().add(new TextContent(String.format("第 %d 页", i)));
                 }
             } else {
                 LOG.error("没有权限读取当前 pdf 文件的内容");

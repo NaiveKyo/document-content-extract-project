@@ -27,6 +27,11 @@ public final class ContentHelper {
     // ================================== text content ============================
 
     /**
+     * 空字符串
+     */
+    public static final String EMPTY_STR = "";
+
+    /**
      * 文本内容转换为 p 标签包含的 html 内容
      */
     private static final String TEXT_TO_HTML_WRAPPER = "<p>%s</p>";
@@ -60,7 +65,7 @@ public final class ContentHelper {
     /**
      * word 中抽取的无效文本
      */
-    private static final List<String> WORD_NO_VALID_TEXT = Arrays.asList("\r", "\t", "\n", "\u0007", "\u000B");
+    private static final List<String> WORD_NO_VALID_TEXT = Arrays.asList("\r", "\t", "\n", "\u0007", "\u000B", "*");
 
     // ================================== image content ============================
 
@@ -135,18 +140,18 @@ public final class ContentHelper {
     }
 
     /**
-     * 清除从 word 文件抽取的文本中包含的特殊字符
+     * 清除抽取文本中包含的特殊字符 {@link ContentHelper#WORD_SPECIAL_SYMBOL_PATTERN}
      * @param wordText 原始文本
      * @return 清洗后的文本
      */
-    public static String cleanWordText(String wordText) {
+    public static String cleanExtractedText(String wordText) {
         if (wordText == null)
             throw new NullPointerException("文本内容不能为 null");
         return WORD_SPECIAL_SYMBOL_PATTERN.matcher(wordText).replaceAll("");
     }
 
     /**
-     * 判断文本是否包含有效的字符, 标准为: 不为  null 且含有至少一个非空字符的字符
+     * 判断文本是否包含有效的字符, 标准为: 不为  null 且含有至少一个非空字符
      * @param str 目标字符序列
      * @return true 表示含有有效文本, 反之 false
      */
@@ -163,12 +168,13 @@ public final class ContentHelper {
     }
 
     /**
-     * 校验从 word 中提取的文本是否有效
+     * 校验从文档中提取的文本是否有效 <br/>
+     * 要求文本不为 null, 且拥有至少一个非空字符, 字符串不能为特定的特殊字符 {@link ContentHelper#WORD_NO_VALID_TEXT}
      * @param content 文本内容
      * @return true 表示有效, 反之则是 false
      */
-    public static boolean checkWordValidText(String content) {
-        return content != null && !WORD_NO_VALID_TEXT.contains(content);
+    public static boolean checkValidText(String content) {
+        return content != null && !WORD_NO_VALID_TEXT.contains(content) && hasText(content);
     }
 
     /**
@@ -182,7 +188,7 @@ public final class ContentHelper {
     }
 
     /**
-     * 根据图片数据获取图片的文件类型, 如 png, jpg 等等
+     * 使用 Java ImageIO 根据图片数据获取图片的文件类型, 如 png, jpg 等等
      * @param imageBytes    图片字节数据
      * @return  文件类型, 返回 null 表示没找到匹配的图片处理器
      * @throws IOException IO 异常

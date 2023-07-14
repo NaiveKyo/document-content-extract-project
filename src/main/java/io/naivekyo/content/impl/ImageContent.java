@@ -10,7 +10,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * 图片内容, thread-safe
+ * <p>图片内容</p>
+ * <p><b>thread-safe</b></p>
  * @author NaiveKyo
  * @version 1.0
  * @since 2023/7/10 22:27
@@ -108,7 +109,7 @@ public class ImageContent implements DocContent {
 
     @Override
     public String toString() {
-        return "ComplexImageContent{" +
+        return "ImageContent{" +
                 "bytes length=" + rawData.length +
                 ", mime type='" + mimeType + '\'' +
                 ", file type='" + fileType + '\'' +

@@ -61,8 +61,8 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
                 } else if (BodyElementType.CONTENTCONTROL.equals(elementType)) {
                     XWPFSDT sdt = (XWPFSDT) e;
                     String text = sdt.getContent().getText();
-                    if (ContentHelper.hasText(text)) {
-                        this.getContents().add(new TextContent(ContentHelper.cleanWordText(text)));
+                    if (ContentHelper.checkValidText(text)) {
+                        this.getContents().add(new TextContent(ContentHelper.cleanExtractedText(text)));
                     }
                 }
             }
@@ -85,8 +85,8 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
      * @param t {@link XWPFTable}
      */
     private void extractTableContent(XWPFTable t) {
-        List<XWPFTableRow> rows = t.getRows();
         TableContent.TableContentBuilder tableBuilder = new TableContent.TableContentBuilder();
+        List<XWPFTableRow> rows = t.getRows();
         for (XWPFTableRow row : rows) {
             // 目前仅处理文本
             List<String> tRow = null;
@@ -99,12 +99,13 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
                     text = ((XWPFSDTCell) cell).getContent().getText();
                 }
                 if (text != null) {
-                    if (!ContentHelper.checkWordValidText(text))
-                        continue;
-                    // 表格这里为了行列的完整, 所以允许空字符存在
                     if (tRow == null)
                         tRow = new ArrayList<>();
-                    tRow.add(ContentHelper.cleanWordText(text));
+                    if (!ContentHelper.checkValidText(text)) {
+                        tRow.add(ContentHelper.EMPTY_STR);
+                        continue;
+                    }
+                    tRow.add(ContentHelper.cleanExtractedText(text));
                 }
             }
             if (tRow != null && !tRow.isEmpty()) {
@@ -147,18 +148,15 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
             } else {
                 // 抽取文本
                 String text = r.text();
-                if (!ContentHelper.checkWordValidText(text))
+                if (!ContentHelper.checkValidText(text))
                     continue;
                 if (sb == null)
-                    sb = new StringBuilder();
+                    sb = new StringBuilder(64);
                 sb.append(text);
             }
         }
         if (sb != null) {
-            String text = sb.toString();
-            if (ContentHelper.hasText(text)) {
-                this.getContents().add(new TextContent(ContentHelper.cleanWordText(text)));
-            }
+            this.getContents().add(new TextContent(ContentHelper.cleanExtractedText(sb.toString())));
         }
     }
     

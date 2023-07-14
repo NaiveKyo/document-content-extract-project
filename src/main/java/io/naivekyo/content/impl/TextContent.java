@@ -7,7 +7,8 @@ import io.naivekyo.content.DocContent;
 import java.util.Objects;
 
 /**
- * 纯文本内容 thread-safe
+ * <p>纯文本内容</p>
+ * <p><b>thread-safe</b></p>
  * @author NaiveKyo
  * @version 1.0
  * @since 2023/7/10 22:25

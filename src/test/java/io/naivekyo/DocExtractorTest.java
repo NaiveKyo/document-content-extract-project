@@ -33,21 +33,24 @@ public class DocExtractorTest {
     public void testTxtFileExtract() {
         ContentExtractor extractor = ExtractorHelper.createTxtFileExtractor(is);
         List<DocContent> contents = extractor.extract();
-        contents.stream().map(DocContent::getHTMLWrapContent).forEach(System.out::println);
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File("C:\\txt-content.txt"), collect);
     }
     
     @Test
     public void testDOCFileExtract() {
         ContentExtractor extractor = ExtractorHelper.createHWPFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
-        contents.stream().map(DocContent::getHTMLWrapContent).forEach(System.out::println);
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File("C:\\word-hwpf-content.txt"), collect);
     }
     
     @Test
     public void testDOCXFileExtract() {
         ContentExtractor extractor = ExtractorHelper.createXWPFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
-        contents.stream().map(DocContent::getHTMLWrapContent).forEach(System.out::println);
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File("C:\\word-xwpf-content.txt"), collect);
     }
     
     @Test
@@ -58,14 +61,15 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createPDFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File(""), collect);
+        IOUtils.writeToTxtFile(new File("C:\\pdf-content.txt"), collect);
     }
     
     @Test
     public void testHSLFFileExtract() {
         ContentExtractor extractor = ExtractorHelper.createHSLFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
-        
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File("C:\\ppt-content.txt"), collect);
     }
 
     public static final String FILE_PATH = "";

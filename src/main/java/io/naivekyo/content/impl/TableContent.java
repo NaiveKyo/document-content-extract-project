@@ -9,12 +9,15 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * word 表格内容(当前版本只存储文本, 不考虑图片) thread-safe
+ * <p>word 表格内容(当前版本只存储文本, 不考虑图片)</p>
+ * <p><b>not thread-safe</b></p>
  * @author NaiveKyo
  * @version 1.0
  * @since 2023/7/10 22:29
  */
 public class TableContent implements DocContent {
+    
+    // TODO 适配带 row/col span 的表格
     
     /**
      * 表格采用二维数组格式, row + col
