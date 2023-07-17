@@ -71,7 +71,15 @@ public class DocExtractorTest {
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File("C:\\ppt-content.txt"), collect);
     }
+    
+    @Test
+    public void testXLSFFileExtract() {
+        ContentExtractor extractor = ExtractorHelper.createXSLFFileExtractor(is);
+        List<DocContent> contents = extractor.extract();
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File("C:\\ppt-content.txt"), collect);
+    }
 
-    public static final String FILE_PATH = "";
+    public static final String FILE_PATH = "C:\\";
 
 }

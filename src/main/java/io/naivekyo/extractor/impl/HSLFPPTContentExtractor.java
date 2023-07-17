@@ -12,6 +12,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hslf.usermodel.HSLFAutoShape;
 import org.apache.poi.hslf.usermodel.HSLFComment;
+import org.apache.poi.hslf.usermodel.HSLFMasterSheet;
 import org.apache.poi.hslf.usermodel.HSLFNotes;
 import org.apache.poi.hslf.usermodel.HSLFObjectShape;
 import org.apache.poi.hslf.usermodel.HSLFPictureData;
@@ -34,6 +35,7 @@ import org.apache.poi.sl.usermodel.SlideShowFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,9 +54,9 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
     }
 
     /**
-     * 映射图片在流中的位置, 确保图片只被读取一次
+     * 映射图片在流中的索引位置, 确保图片只被读取一次
      */
-    private byte[] picBitMap = null;
+    private BitSet picBitSet = null;
     
     @Override
     protected void doExtract() {
@@ -66,8 +68,8 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
             if (hslf instanceof HSLFSlideShow) {
                 HSLFSlideShow hslfSlideShow = (HSLFSlideShow) hslf;
                 
-                // 图片数据的 bitmap
-                picBitMap = new byte[hslfSlideShow.getPictureData().size()];
+                // 图片数据的 bitset
+                picBitSet = new BitSet(hslfSlideShow.getPictureData().size());
                 
                 // TODO 暂不处理音频数据
                 HSLFSoundData[] soundDataList = hslfSlideShow.getSoundData();
@@ -93,10 +95,15 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
                     
                     // 处理批注文字
                     handleComment(page, currentSlide.getComments());
-
                     // 处理备注文字
                     handleNote(page, currentSlide.getNotes());
-
+                    // 处理 layout TODO
+                    HSLFMasterSheet slideLayout = currentSlide.getSlideLayout();
+                    for (HSLFShape shape : slideLayout.getShapes()) {
+                        if (shape instanceof HSLFPictureShape)
+                            handlePictureShape(page, "", (HSLFPictureShape) shape);
+                    }
+                    
                     // 当前幻灯片的所有内容
                     List<HSLFShape> shapeList = currentSlide.getShapes();
                     for (HSLFShape shape : shapeList) {
@@ -116,7 +123,7 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
                             // 列表
                             handleTextBox((HSLFTextBox) shape);
                         } else {
-                            LOG.warn(String.format("ppt 内容抽取, 当前幻灯片页码: %d, 待处理的 Shape 信息: classType: %s, shapeType: %s, shapeName: %s",
+                            LOG.warn(String.format("ppt 内容抽取, 当前幻灯片页码: %d, 待处理的 Shape 信息: classType: %s, shapeType: %s, shapeName: %s TODO",
                                     page, shape.getClass().getName(), shape.getShapeType(), shape.getShapeName()));
                         }
                     }
@@ -212,13 +219,13 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
                     if (lookup.equals(ObjectMetaData.Application.EXCEL_V8)) {
                         // TODO
                         if (LOG.isInfoEnabled())
-                            LOG.info(String.format(".ppt 文件, 页码: %d, 读取到 EXCEL_V8 OLE type", page));
+                            LOG.info(String.format(".ppt 文件, 页码: %d, 读取到 EXCEL_V8 OLE type TODO", page));
                     } else if (lookup.equals(ObjectMetaData.Application.EXCEL_V12)) {
                         // TODO
                         if (LOG.isInfoEnabled())
-                            LOG.info(String.format(".ppt 文件, 页码: %d, 读取到 EXCEL_V12 OLE type", page));
+                            LOG.info(String.format(".ppt 文件, 页码: %d, 读取到 EXCEL_V12 OLE type TODO", page));
                     } else {
-                        LOG.error(String.format("读取 .ppt 文件时, 页码: %d, 解析到未知的 excel OLE 类型: %s", page, lookup));
+                        LOG.error(String.format("读取 .ppt 文件时, 页码: %d, 解析到未知的 excel OLE 类型: %s TODO", page, lookup));
                     }
                 }
                 break;
@@ -230,13 +237,13 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
                     if (lookup.equals(ObjectMetaData.Application.WORD_V8)) {
                         // TODO
                         if (LOG.isInfoEnabled())
-                            LOG.info(String.format(".ppt 文件, 页码: %d, 读取到 WORD_V8 OLE type", page));
+                            LOG.info(String.format(".ppt 文件, 页码: %d, 读取到 WORD_V8 OLE type TODO", page));
                     } else if (lookup.equals(ObjectMetaData.Application.WORD_V12)) {
                         // TODO
                         if (LOG.isInfoEnabled())
-                            LOG.info(".ppt 文件, 读取到 WORD_V12 OLE type");
+                            LOG.info(".ppt 文件, 读取到 WORD_V12 OLE type TODO");
                     } else {
-                        LOG.error(String.format("读取 .ppt 文件时, 页码: %d, 解析到未知的 word OLE 类型: %s", page, lookup));
+                        LOG.error(String.format("读取 .ppt 文件时, 页码: %d, 解析到未知的 word OLE 类型: %s TODO", page, lookup));
                     }
                 }
                 break;
@@ -302,20 +309,21 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
         int numberOfColumns = shape.getNumberOfColumns();
         TableContent.TableContentBuilder builder = null;
         for (int i = 0; i < numberOfRows; i++) {
-            List<String> row = new ArrayList<>();
+            List<String> row = null;
             for (int j = 0; j < numberOfColumns; j++) {
+                // TODO 处理带行/列 span 的表格
                 HSLFTableCell cell = shape.getCell(i, j);
                 if (cell != null) {
-                    // TODO 处理表格文本 (注: 表格涉及到行和列的 span)
-                    int rowSpan = cell.getRowSpan();
-                    int colSpan = cell.getGridSpan();
                     String text = cell.getText();
-                    if (ContentHelper.hasText(text)) {
+                    if (row == null)
+                        row = new ArrayList<>();
+                    if (ContentHelper.hasText(text))
                         row.add(ContentHelper.cleanExtractedText(text));
-                    }
+                    else 
+                        row.add(ContentHelper.EMPTY_STR);
                 }
             }
-            if (!row.isEmpty()) {
+            if (row != null && !row.isEmpty()) {
                 if (builder == null)
                     builder = new TableContent.TableContentBuilder();
                 builder.addRow(row);
@@ -364,8 +372,14 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
                 LOG.error(String.format("处理 .ppt 文件, 页码: %d, 解析图片数据时发现无效数据, OLE name: %s", page, oleName));
             return;
         }
-        if (picBitMap[picIndex - 1] == 0) {
+        
+        if (!picBitSet.get(picIndex - 1)) {
             HSLFPictureData pictureData = pic.getPictureData();
+            if (pictureData == null) {
+                LOG.error(String.format("处理 .ppt 文件时, 页码: %d, OLE name: %s, 无法获得图片数据, shape 类型: %s", page, oleName, pic.getShapeName()));
+                picBitSet.set(picIndex - 1);
+                return;
+            }
             byte[] data = pictureData.getData();
             PictureData.PictureType pt = pictureData.getType();
             String extension = pt.extension;
@@ -380,7 +394,7 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
             } else {
                 getContents().add(new ImageContent(data, mimeType, extension.substring(extension.indexOf(".") + 1)));
             }
-            picBitMap[picIndex - 1] = 1;
+            picBitSet.set(picIndex - 1);
         }
     }
     

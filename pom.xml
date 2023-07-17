@@ -71,7 +71,16 @@
             <artifactId>pdfbox</artifactId>
             <version>2.0.29</version>
         </dependency>
-        
+
+        <!-- jol is the tiny toolbox to analyze object layout in JVMs. -->
+        <dependency>
+            <groupId>org.openjdk.jol</groupId>
+            <artifactId>jol-core</artifactId>
+            <version>0.17</version>
+            <scope>provided</scope>
+        </dependency>
+
+
     </dependencies>
     
 </project>

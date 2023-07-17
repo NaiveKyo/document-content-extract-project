@@ -19,6 +19,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 
 /**
@@ -32,7 +34,7 @@ public class IOUtils {
 
     /**
      * write contents to txt file line by line.
-     * @param file target output file
+     * @param file target output file, must exist
      * @param lines all lines
      */
     public static void writeToTxtFile(File file, List<String> lines) {
@@ -210,6 +212,41 @@ public class IOUtils {
         ImageIO.write(bufImg, "PNG", os);
 
         return os.toByteArray();
+    }
+    
+    public static byte[] readDataFromNetworkSource(String url, String referer) {
+        URL networkURL = null;
+        URLConnection conn = null;
+        InputStream is = null;
+        Exception ex = null;
+        ByteArrayOutputStream baos = null;
+        try {
+            networkURL = new URL(url);
+            conn = networkURL.openConnection();
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            conn.setRequestProperty("referer", referer);
+            is = conn.getInputStream();
+            baos = new ByteArrayOutputStream(4096);
+            byte[] buf = new byte[4096];
+            int len = -1;
+            while ((len = is.read(buf)) != -1) {
+                baos.write(buf, 0, len);
+            }
+        } catch (IOException e) {
+            ex = e;
+        } finally {
+            try {
+                if (is != null)
+                    is.close();
+            } catch (IOException e) {
+                ex = e;
+            }
+        }
+
+        if (ex != null)
+            throw new RuntimeException(ex);
+        return baos.toByteArray();
     }
     
 }
