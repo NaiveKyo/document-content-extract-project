@@ -24,7 +24,7 @@ public enum ContentType {
     TABLE("table"),
 
     /**
-     * 带标题的有序/无需列表
+     * 带标题的有序/无序列表
      */
     LIST("list");
 

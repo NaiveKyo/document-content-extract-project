@@ -127,7 +127,7 @@ public class IOUtils {
     }
 
     /**
-     * 从输入流中提取所有字节
+     * 使用缓冲数组从输入流中提取所有字节
      * @param is 输入流
      * @param bufferSize 缓存数组大小
      * @return  存储所有字节的数组

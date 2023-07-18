@@ -2,7 +2,7 @@ package io.naivekyo;
 
 import io.naivekyo.content.DocContent;
 import io.naivekyo.extractor.ContentExtractor;
-import io.naivekyo.extractor.ExtractorHelper;
+import io.naivekyo.extractor.ExtractorFactory;
 import io.naivekyo.support.IOUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ public class DocExtractorTest {
     
     @Test
     public void testTxtFileExtract() {
-        ContentExtractor extractor = ExtractorHelper.createTxtFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createTxtFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -41,7 +41,7 @@ public class DocExtractorTest {
     
     @Test
     public void testDOCFileExtract() {
-        ContentExtractor extractor = ExtractorHelper.createHWPFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createHWPFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -49,7 +49,7 @@ public class DocExtractorTest {
     
     @Test
     public void testDOCXFileExtract() {
-        ContentExtractor extractor = ExtractorHelper.createXWPFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createXWPFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -60,7 +60,7 @@ public class DocExtractorTest {
         // -Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider
         // System.setProperty("sun.java2d.cmm", "sun.java2d.cmm.kcms.KcmsServiceProvider");
         // System.out.println(System.getProperty("sun.java2d.cmm"));
-        ContentExtractor extractor = ExtractorHelper.createPDFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createPDFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -68,7 +68,7 @@ public class DocExtractorTest {
     
     @Test
     public void testHSLFFileExtract() {
-        ContentExtractor extractor = ExtractorHelper.createHSLFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createHSLFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -76,7 +76,7 @@ public class DocExtractorTest {
     
     @Test
     public void testXLSFFileExtract() {
-        ContentExtractor extractor = ExtractorHelper.createXSLFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createXSLFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
