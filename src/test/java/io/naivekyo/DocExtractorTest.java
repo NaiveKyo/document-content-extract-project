@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
  * @since 2023/7/10 22:30
  */
 public class DocExtractorTest {
+
+    public static final String FILE_PATH = "";
     
     public static InputStream is = null;
     
@@ -34,7 +36,7 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createTxtFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File("C:\\txt-content.txt"), collect);
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
     
     @Test
@@ -42,7 +44,7 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createHWPFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File("C:\\word-hwpf-content.txt"), collect);
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
     
     @Test
@@ -50,7 +52,7 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createXWPFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File("C:\\word-xwpf-content.txt"), collect);
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
     
     @Test
@@ -61,7 +63,7 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createPDFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File("C:\\pdf-content.txt"), collect);
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
     
     @Test
@@ -69,7 +71,7 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createHSLFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File("C:\\ppt-content.txt"), collect);
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
     
     @Test
@@ -77,9 +79,7 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorHelper.createXSLFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File("C:\\ppt-content.txt"), collect);
+        IOUtils.writeToTxtFile(new File(""), collect);
     }
-
-    public static final String FILE_PATH = "C:\\";
 
 }

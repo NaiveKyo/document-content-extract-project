@@ -12,6 +12,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hslf.usermodel.HSLFAutoShape;
 import org.apache.poi.hslf.usermodel.HSLFComment;
+import org.apache.poi.hslf.usermodel.HSLFGroupShape;
 import org.apache.poi.hslf.usermodel.HSLFMasterSheet;
 import org.apache.poi.hslf.usermodel.HSLFNotes;
 import org.apache.poi.hslf.usermodel.HSLFObjectShape;
@@ -116,6 +117,9 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
                         } else if (shape instanceof HSLFTable) {
                             // 表格
                             handleTableShape((HSLFTable) shape);
+                        } else if (shape instanceof HSLFGroupShape) {
+                            // group
+                            handleGroupShape(page, (HSLFGroupShape) shape);
                         } else if (shape instanceof HSLFAutoShape) {
                             // 文本
                             handleTextParagraphs(((HSLFAutoShape) shape).getTextParagraphs());
@@ -144,7 +148,7 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
         if (mark != null)
             throw new RuntimeException(mark);
     }
-
+    
     /**
      * 处理备注文本
      * @param page 当前幻灯片的页码
@@ -265,6 +269,32 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
             }
         }
     }
+
+    /**
+     * 处理 group 组, 解析所有内容
+     * @param page 幻灯片页码
+     * @param groupShape {@link HSLFGroupShape}
+     */
+    private void handleGroupShape(int page, HSLFGroupShape groupShape) throws IOException {
+        for (HSLFShape shape : groupShape.getShapes()) {
+            if (shape instanceof HSLFObjectShape) {
+                handleOLEShape(page, (HSLFObjectShape) shape);
+            } else if (shape instanceof HSLFPictureShape) {
+                handlePictureShape(page, "", (HSLFPictureShape) shape);
+            } else if (shape instanceof HSLFTable) {
+                handleTableShape((HSLFTable) shape);
+            } else if (shape instanceof HSLFGroupShape) {
+                handleGroupShape(page, (HSLFGroupShape) shape);
+            } else if (shape instanceof HSLFAutoShape) {
+                handleTextParagraphs(((HSLFAutoShape) shape).getTextParagraphs());
+            } else if (shape instanceof HSLFTextBox) {
+                handleTextBox((HSLFTextBox) shape);
+            } else {
+                LOG.warn(String.format("ppt 内容抽取, 当前幻灯片页码: %d, 待处理的 Shape 信息: classType: %s, shapeType: %s, shapeName: %s TODO",
+                        page, shape.getClass().getName(), shape.getShapeType(), shape.getShapeName()));
+            }
+        }
+    }
     
     /**
      * 处理列表数据
@@ -359,7 +389,7 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
     /**
      * 处理图片数据
      * @param page 当前图片所处幻灯片的页码, -1 表示从母版提取的图片
-     * @param oleName 当前 OLE 类型名称
+     * @param oleName 当前 OLE 类型名称, 空字符表示常规图片
      * @param pic Represents a picture in a PowerPoint document.
      * @throws IOException IOException
      */
@@ -367,16 +397,19 @@ public class HSLFPPTContentExtractor extends AbstractContentExtractor {
         int picIndex = pic.getPictureIndex();
         if (picIndex == 0) {
             if (page == -1)
-                LOG.error(String.format("处理 .ppt 文件, 从母版解析图片数据时发现无效数据, OLE name: %s", oleName));
+                LOG.error(String.format("处理 .ppt 文件, 从母版解析图片数据时发现无效数据%s%s", 
+                        "".equals(oleName) ? "" : ", OLE name : ", oleName));
             else 
-                LOG.error(String.format("处理 .ppt 文件, 页码: %d, 解析图片数据时发现无效数据, OLE name: %s", page, oleName));
+                LOG.error(String.format("处理 .ppt 文件, 页码: %d, 解析图片数据时发现无效数据%s%s", 
+                        page, "".equals(oleName) ? "" : ", OLE name: ", oleName));
             return;
         }
         
         if (!picBitSet.get(picIndex - 1)) {
             HSLFPictureData pictureData = pic.getPictureData();
             if (pictureData == null) {
-                LOG.error(String.format("处理 .ppt 文件时, 页码: %d, OLE name: %s, 无法获得图片数据, shape 类型: %s", page, oleName, pic.getShapeName()));
+                LOG.error(String.format("处理 .ppt 文件时, 页码: %d, %s无法获得图片数据, shape 类型: %s", 
+                        page, "".equals(oleName) ? "" : ("OLE name: " + oleName + ", "),  pic.getShapeName()));
                 picBitSet.set(picIndex - 1);
                 return;
             }

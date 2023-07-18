@@ -30,7 +30,6 @@ import org.apache.poi.xslf.usermodel.XSLFTextBox;
 import org.apache.poi.xslf.usermodel.XSLFTextParagraph;
 import org.apache.poi.xslf.usermodel.XSLFTextRun;
 import org.apache.poi.xslf.usermodel.XSLFTextShape;
-import org.apache.poi.xslf.usermodel.XSLFTheme;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +51,7 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
     private static final Object DUMMY_OBJ = new Object();
     
     /**
-     * pptx 中 media 文件名的 bitset, 用于防止多次读取同一张图片的情况 
+     * pptx 中 media 文件名的 map, 用于防止多次读取同一张图片的情况 
      */
     private Map<String, Object> mediaNameMap = null;
     
@@ -75,36 +74,14 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
             
             // 获取所有 media 数据(图片/视频/音频), 目前只处理图片 TODO
             List<XSLFPictureData> mediaDataList = xmls.getPictureData();
-            
             mediaNameMap = new HashMap<>((int) (mediaDataList.size() / .45f + 1f));
-            for (int i = 0; i < mediaDataList.size(); i++) {
-                XSLFPictureData picData = mediaDataList.get(i);
-                System.out.println(picData.getFileName());
-                byte[] data = picData.getData();
-                PictureData.PictureType pt = picData.getType();
-                if (pt == null) {
-                    LOG.warn(String.format("TODO 处理 .pptx 文件时, 读取到无法处理的 mime-type 文件, 数据类型: %s", picData.getContentType()));
-                    continue;
-                }
-                String mimeType = pt.contentType;
-                String extension = pt.extension;
-                IOUtils.saveFile(data, String.format("C:\\%d%s", i, extension));
-            }
-            
-            
-            int masterImg = 0;
-            int layoutImg = 0;
-            int img = 0;
             
             // 处理幻灯片母版, 抽取图片数据
             List<XSLFSlideMaster> slideMasters = xmls.getSlideMasters();
             for (XSLFSlideMaster slideMaster : slideMasters) {
-                XSLFTheme theme = slideMaster.getTheme();
-                PackagePart packagePart = theme.getPackagePart();
-                System.out.println(packagePart.getContentType());
                 for (XSLFShape shape : slideMaster.getShapes()) {
                     if (shape instanceof XSLFPictureShape) {
-                        handlePicture(-1, masterImg++, ((XSLFPictureShape) shape).getPictureData());
+                        handlePicture(-1, ((XSLFPictureShape) shape).getPictureData());
                     }
                 }
             }
@@ -112,12 +89,9 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
             // TODO 暂时不处理备注母版
             XSLFNotesMaster notesMaster = xmls.getNotesMaster();
             
-            // shape map counter
-            Map<String, Integer> shapeCounter = new HashMap<>();
             // 分页处理所有幻灯片
             for (XSLFSlide slide : xmls.getSlides()) {
                 int slideNumber = slide.getSlideNumber();   // 幻灯片页码, 从 1 开始计数
-                System.out.println("====================== 页码: " + slideNumber + " ======================");
                 getContents().add(new TextContent(String.format("第 %d 页", slideNumber)));
 
                 // 批注
@@ -130,20 +104,15 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
                 XSLFSlideLayout layout = slide.getSlideLayout();
                 for (XSLFShape shape : layout.getShapes()) {
                     if (shape instanceof XSLFPictureShape) {
-                        handlePicture(0, layoutImg++, ((XSLFPictureShape) shape).getPictureData());
+                        handlePicture(0, ((XSLFPictureShape) shape).getPictureData());
                     }
                 }
-
-                
                 
                 // 按照 shape 的类型处理所有内容
                 for (XSLFShape shape : slide.getShapes()) {
-                    shapeCounter.compute(shape.getClass().getName(), (k, v) -> v == null ? 1 : v + 1);
-                    // System.out.printf("%-50s%n%n", shape.getClass().getName());
-                    
                     if (shape instanceof XSLFPictureShape) {
                         // 处理图片
-                        handlePicture(slideNumber, img++, ((XSLFPictureShape) shape).getPictureData());
+                        handlePicture(slideNumber, ((XSLFPictureShape) shape).getPictureData());
                     } else if (shape instanceof XSLFTextBox) {
                         // 处理列表
                         handleTextBox(((XSLFTextBox) shape));
@@ -155,9 +124,10 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
                         handleTable(((XSLFTable) shape));
                     } else if (shape instanceof XSLFObjectShape) {
                         // 处理 OLE
-                        handleOLEShape(((XSLFObjectShape) shape));
+                        handleOLEShape(slideNumber, ((XSLFObjectShape) shape));
                     } else if (shape instanceof XSLFGroupShape) {
-                        handleGroupShape(img, slideNumber, (XSLFGroupShape) shape);
+                        // 处理 group
+                        handleGroupShape(slideNumber, (XSLFGroupShape) shape);
                     } else {
                         LOG.warn(String.format("pptx 内容抽取, 当前幻灯片页码: %d, 待处理的 Shape 信息: classType: %s, shapeName: %s",
                                 slideNumber, shape.getClass().getName(), shape.getShapeName()));
@@ -165,8 +135,27 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
                 }
             }
 
-            // 打印所有 shape 类型及出现次数
-            shapeCounter.forEach((key, value) -> System.out.printf("%-50s --> %-3d%n", key, value));
+            // 处理完所有幻灯片后, 查看是否有遗漏的图片没有抽取
+            for (XSLFPictureData picData : mediaDataList) {
+                String name = picData.getFileName();
+                if (ContentHelper.hasText(name)) {
+                    if (mediaNameMap.get(name) == null) {
+                        byte[] data = picData.getData();
+                        PictureData.PictureType pt = picData.getType();
+                        if (pt == null) {
+                            LOG.warn(String.format("TODO: 处理 .pptx 文件时, 读取到无法处理的 mime-type 文件, 数据类型: %s", picData.getContentType()));
+                            continue;
+                        }
+                        if (PictureData.PictureType.WDP.equals(pt)) {
+                            LOG.warn("pptx 文件, 暂不处理 Microsoft Windows Media Photo image (.wdp) 图片文件");
+                            continue;
+                        }
+                        String mimeType = pt.contentType;
+                        String extension = pt.extension;
+                        getContents().add(new ImageContent(data, mimeType, extension.substring(extension.indexOf(".") + 1)));
+                    }
+                }
+            }
         } catch (IOException e) {
             mark = e;
         } finally {
@@ -184,15 +173,14 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
 
     /**
      * 递归处理 GroupShape
-     * @param img
-     * @param page
-     * @param shape
-     * @throws IOException
+     * @param page  幻灯片页码
+     * @param shape {@link XSLFGroupShape}
+     * @throws IOException IOException
      */
-    private void handleGroupShape(int img, int page, XSLFGroupShape shape) throws IOException {
+    private void handleGroupShape(int page, XSLFGroupShape shape) throws IOException {
         for (XSLFShape gs : shape.getShapes()) {
             if (gs instanceof XSLFPictureShape) {
-                handlePicture(page, img++, ((XSLFPictureShape) gs).getPictureData());
+                handlePicture(page, ((XSLFPictureShape) gs).getPictureData());
             } else if (gs instanceof XSLFTextBox) {
                 // 处理列表
                 handleTextBox(((XSLFTextBox) gs));
@@ -204,9 +192,9 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
                 handleTable(((XSLFTable) gs));
             } else if (gs instanceof XSLFObjectShape) {
                 // 处理 OLE
-                handleOLEShape(((XSLFObjectShape) gs));
+                handleOLEShape(page, ((XSLFObjectShape) gs));
             } else if (gs instanceof XSLFGroupShape) {
-                handleGroupShape(img, page, ((XSLFGroupShape) gs));
+                handleGroupShape(page, ((XSLFGroupShape) gs));
             } else {
                 LOG.warn(String.format("pptx 内容抽取, 当前幻灯片页码: %d, 待处理的 Shape 信息: classType: %s, shapeName: %s",
                         page, gs.getClass().getName(), gs.getShapeName()));
@@ -365,10 +353,12 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
 
     /**
      * 解析 OLE 内嵌对象, 根据类型采用对应措施
+     * @param page 幻灯片页码
      * @param objShape {@link XSLFObjectShape}
      */
-    private void handleOLEShape(XSLFObjectShape objShape) {
-        LOG.info(String.format("handleOLE, fullName : %s, shapeName : %s", objShape.getFullName(), objShape.getShapeName()));
+    private void handleOLEShape(int page, XSLFObjectShape objShape) {
+        LOG.info(String.format("处理 .pptx 文件时, 页码: %d, 发现待处理的 OLE 类型 , fullName : %s, shapeName : %s", 
+                page, objShape.getFullName(), objShape.getShapeName()));
     }
 
     /**
@@ -377,10 +367,10 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
      * @param pictureData {@link XSLFPictureShape}
      * @throws IOException IOException
      */
-    private void handlePicture(int page, int count, XSLFPictureData pictureData) throws IOException {
+    private void handlePicture(int page, XSLFPictureData pictureData) throws IOException {
         PictureData.PictureType pt = pictureData.getType();
         if (pt == null) {
-            LOG.error(String.format("处理 .pptx 文件时, 读取到无效的图片数据, 页码: %d, 数据类型: %s", page, pictureData.getContentType()));
+            LOG.error(String.format("处理 .pptx 文件时, 读取到无效的图片数据, 页码: %s, 数据类型: %s", page == -1 ? "母版" : page, pictureData.getContentType()));
             return;
         }
         byte[] data = pictureData.getData();
@@ -388,7 +378,6 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
         if (ContentHelper.hasText(name)) {
             if (mediaNameMap.put(name, DUMMY_OBJ) == null) {
                 extractPicture(data, pt);
-                IOUtils.saveFile(data, String.format("C:\\%d-%d%s", page, count, pt.extension));
             }
         } else
             extractPicture(data, pt);
@@ -404,6 +393,8 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
         } else if (PictureData.PictureType.EMF.equals(pt)) {
             data = IOUtils.convertEMFToPNG(data);
             getContents().add(new ImageContent(data, ImageType.PNG.getMimeType(), ImageType.PNG.getExtension()));
+        } else if (PictureData.PictureType.WDP.equals(pt)) {
+            LOG.warn("暂不处理 Microsoft Windows Media Photo image (.wdp) 图片文件");
         } else {
             getContents().add(new ImageContent(data, mimeType, extension.substring(extension.indexOf(".") + 1)));
         }
