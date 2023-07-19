@@ -41,7 +41,7 @@ public class DocExtractorTest {
     
     @Test
     public void testDOCFileExtract() {
-        ContentExtractor extractor = ExtractorFactory.createHWPFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createHWPFWordExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -49,7 +49,7 @@ public class DocExtractorTest {
     
     @Test
     public void testDOCXFileExtract() {
-        ContentExtractor extractor = ExtractorFactory.createXWPFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createXWPFWordExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -68,7 +68,7 @@ public class DocExtractorTest {
     
     @Test
     public void testHSLFFileExtract() {
-        ContentExtractor extractor = ExtractorFactory.createHSLFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createHSLFPPTExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);
@@ -76,7 +76,7 @@ public class DocExtractorTest {
     
     @Test
     public void testXLSFFileExtract() {
-        ContentExtractor extractor = ExtractorFactory.createXSLFFileExtractor(is);
+        ContentExtractor extractor = ExtractorFactory.createXSLFPPTExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
         IOUtils.writeToTxtFile(new File(""), collect);

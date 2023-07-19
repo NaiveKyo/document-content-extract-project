@@ -6,7 +6,9 @@ import io.naivekyo.extractor.impl.PDFFileContentExtractor;
 import io.naivekyo.extractor.impl.TxtFileContentExtractor;
 import io.naivekyo.extractor.impl.XSLFPPTContentExtractor;
 import io.naivekyo.extractor.impl.XWPFWordContentExtractor;
+import org.apache.poi.poifs.filesystem.FileMagic;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -34,7 +36,7 @@ public final class ExtractorFactory {
      * @param is 文档输入流
      * @return .doc 文件内容抽取器实例
      */
-    public static ContentExtractor createHWPFFileExtractor(InputStream is) {
+    public static ContentExtractor createHWPFWordExtractor(InputStream is) {
         return new HWPFWordContentExtractor(is);
     }
 
@@ -43,8 +45,26 @@ public final class ExtractorFactory {
      * @param is 文档输入流
      * @return .docx 文件内容抽取器实例
      */
-    public static ContentExtractor createXWPFFileExtractor(InputStream is) {
+    public static ContentExtractor createXWPFWordExtractor(InputStream is) {
         return new XWPFWordContentExtractor(is);
+    }
+
+    /**
+     * 根据文件字节流自动检测 word 文件类型(.doc/.docx)
+     * @param is	文件输入流
+     * @return		抽取器实例
+     * @throws IOException IOException
+     * @throws RuntimeException 未知的类型
+     */
+    public static ContentExtractor smartCreateWordExtractor(InputStream is) throws IOException {
+        InputStream prepareIs = FileMagic.prepareToCheckMagic(is);
+        FileMagic fm = FileMagic.valueOf(prepareIs);
+        if (FileMagic.OLE2.equals(fm))
+            return new HWPFWordContentExtractor(prepareIs);
+        else if (FileMagic.OOXML.equals(fm))
+            return new XWPFWordContentExtractor(prepareIs);
+        else
+            throw new RuntimeException("未知的 word 文件类型");
     }
 
     /**
@@ -61,7 +81,7 @@ public final class ExtractorFactory {
      * @param is 文档输入流
      * @return .ppt 文件内容抽取器实例
      */
-    public static ContentExtractor createHSLFFileExtractor(InputStream is) {
+    public static ContentExtractor createHSLFPPTExtractor(InputStream is) {
         return new HSLFPPTContentExtractor(is);
     }
 
@@ -70,8 +90,27 @@ public final class ExtractorFactory {
      * @param is 文档输入流
      * @return .pptx 文件内容抽取器实例
      */
-    public static ContentExtractor createXSLFFileExtractor(InputStream is) {
+    public static ContentExtractor createXSLFPPTExtractor(InputStream is) {
         return new XSLFPPTContentExtractor(is);
+    }
+
+
+    /**
+     * 根据文件字节流自动检测 ppt 文件类型(.ppt/.pptx)
+     * @param is	文件输入流
+     * @return		抽取器实例
+     * @throws IOException IOException
+     * @throws RuntimeException 未知的类型
+     */
+    public static ContentExtractor smartCreatePPTExtractor(InputStream is) throws IOException {
+        InputStream prepareIs = FileMagic.prepareToCheckMagic(is);
+        FileMagic fm = FileMagic.valueOf(prepareIs);
+        if (FileMagic.OLE2.equals(fm))
+            return new HSLFPPTContentExtractor(prepareIs);
+        else if (FileMagic.OOXML.equals(fm))
+            return new XSLFPPTContentExtractor(prepareIs);
+        else
+            throw new RuntimeException("未知的 ppt 文件类型");
     }
     
 }
