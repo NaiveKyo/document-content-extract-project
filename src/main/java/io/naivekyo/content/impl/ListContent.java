@@ -1,7 +1,9 @@
 package io.naivekyo.content.impl;
 
+import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
+import io.naivekyo.support.function.ContentConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,17 +36,28 @@ public class ListContent implements DocContent {
 
     @Override
     public String getHTMLWrapContent() {
+        return handleItems(null);
+    }
+
+    @Override
+    public String getHTMLWrapContent(ContentConverter<DocContent, String> converter) {
+        if (converter == null)
+            return getHTMLWrapContent();
+        return handleItems(converter);
+    }
+
+    private String handleItems(ContentConverter<DocContent, String> converter) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < getItems().size(); i++) {
             Item item = getItems().get(i);
             if (i == 0) {
                 if (item.isHeader())
-                    sb.append("<p>").append(item.getText()).append("</p>")
-                        .append("<ul>");
-                else 
-                    sb.append("<ul><li>").append(item.getText()).append("</li>");
+                    sb.append("<p>").append(item.getHtmlWrapText(converter)).append("</p>")
+                            .append("<ul>");
+                else
+                    sb.append("<ul><li>").append(item.getHtmlWrapText(converter)).append("</li>");
             } else {
-                sb.append("<li>").append(item.getText()).append("</li>");
+                sb.append("<li>").append(item.getHtmlWrapText(converter)).append("</li>");
             }
         }
         sb.append("</ul>");
@@ -111,17 +124,21 @@ public class ListContent implements DocContent {
 
     static class Item {
         
-        private final String text;
+        private final TextContent text;
         
         private final boolean headerFlag;
 
         public Item(String text, boolean isHeader) {
-            this.text = text;
+            this.text = new TextContent(text);
             this.headerFlag = isHeader;
         }
 
         public String getText() {
-            return text;
+            return text.getRawContent();
+        }
+        
+        public String getHtmlWrapText(ContentConverter<DocContent, String> converter) {
+            return ContentHelper.escapeTextContent(text, converter);
         }
 
         public boolean getHeaderFlag() {
@@ -137,4 +154,5 @@ public class ListContent implements DocContent {
         }
         
     }
+    
 }

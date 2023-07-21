@@ -3,12 +3,13 @@ package io.naivekyo.content.impl;
 import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
+import io.naivekyo.support.function.ContentConverter;
 
 import java.util.Objects;
 
 /**
  * <p>纯文本内容</p>
- * <p><b>thread-safe</b></p>
+ * <p><b>not-thread-safe</b></p>
  * @author NaiveKyo
  * @version 1.0
  * @since 2023/7/10 22:25
@@ -18,7 +19,7 @@ public class TextContent implements DocContent {
     /**
      * 原始内容
      */
-    private final String rawContent;
+    private String rawContent;
 
     public TextContent(String content) {
         if (!ContentHelper.hasText(content))
@@ -33,7 +34,14 @@ public class TextContent implements DocContent {
 
     @Override
     public String getHTMLWrapContent() {
-        return ContentHelper.convertTextToHTML(getRawContent());
+        return ContentHelper.convertTextToHTML(ContentHelper.escapeTextContent(this));
+    }
+
+    @Override
+    public String getHTMLWrapContent(ContentConverter<DocContent, String> converter) {
+        if (converter == null)
+            return getHTMLWrapContent();
+        return ContentHelper.convertTextToHTML(ContentHelper.escapeTextContent(this, converter));
     }
 
     @Override
@@ -47,6 +55,14 @@ public class TextContent implements DocContent {
      */
     public String getRawContent() {
         return rawContent;
+    }
+
+    /**
+     * 设置文本内容
+     * @param content text content
+     */
+    public void setRawContent(String content) {
+        this.rawContent = content;
     }
 
     @Override

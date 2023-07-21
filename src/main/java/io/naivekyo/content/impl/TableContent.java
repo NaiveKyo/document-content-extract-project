@@ -3,10 +3,12 @@ package io.naivekyo.content.impl;
 import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
+import io.naivekyo.support.function.ContentConverter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * <p>word 表格内容(当前版本只存储文本, 不考虑图片)</p>
@@ -22,7 +24,7 @@ public class TableContent implements DocContent {
     /**
      * 表格采用二维数组格式, row + col
      */
-    private final List<List<String>> rawContent;
+    private final List<List<TextContent>> rawContent;
 
     /**
      * 表格的总行数
@@ -38,7 +40,7 @@ public class TableContent implements DocContent {
         this.rawContent = new ArrayList<>();
     }
 
-    public List<List<String>> getRawContent() {
+    public List<List<TextContent>> getRawContent() {
         return rawContent;
     }
 
@@ -52,17 +54,17 @@ public class TableContent implements DocContent {
 
     @Override
     public String getContent() {
-        List<List<String>> data = getRawContent();
+        List<List<TextContent>> data = getRawContent();
         if (data == null || data.isEmpty())
             return "";
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < data.size(); i++) {
             StringBuilder colBuilder = new StringBuilder();
-            List<String> row = data.get(i);
+            List<TextContent> row = data.get(i);
             for (int j = 0; j < row.size(); j++) {
-                String col = row.get(j);
-                colBuilder.append(col);
+                TextContent col = row.get(j);
+                colBuilder.append(col.getRawContent());
                 if (j < row.size() - 1)
                     colBuilder.append("\t");
             }
@@ -76,7 +78,14 @@ public class TableContent implements DocContent {
 
     @Override
     public String getHTMLWrapContent() {
-        return ContentHelper.convertTableDataToHtml(getRawContent(), getRowSize(), getColSize());
+        return ContentHelper.convertTableDataToHtml(this);
+    }
+
+    @Override
+    public String getHTMLWrapContent(ContentConverter<DocContent, String> converter) {
+        if (converter == null)
+            return getHTMLWrapContent();
+        return ContentHelper.convertTableDataToHtml(this, converter);
     }
 
     @Override
@@ -95,14 +104,14 @@ public class TableContent implements DocContent {
         public TableContentBuilder addRow(List<String> row) {
             if (row == null || row.isEmpty())
                 throw new RuntimeException("表格行数据不能为空");
-            this.table.rawContent.add(row);
+            this.table.rawContent.add(row.stream().map(TextContent::new).collect(Collectors.toList()));
             return this;
         }
 
         public TableContent build() {
             this.table.rowSize = table.rawContent.size();
             int max = 0;
-            for (List<String> col : this.table.rawContent) {
+            for (List<TextContent> col : this.table.rawContent) {
                 max = Math.max(col.size(), max);
             }
             this.table.colSize = max;
@@ -131,4 +140,5 @@ public class TableContent implements DocContent {
                 ", colSize=" + colSize +
                 '}';
     }
+    
 }

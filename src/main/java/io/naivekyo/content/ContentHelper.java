@@ -1,5 +1,10 @@
 package io.naivekyo.content;
 
+import io.naivekyo.content.impl.ImageContent;
+import io.naivekyo.content.impl.TableContent;
+import io.naivekyo.content.impl.TextContent;
+import io.naivekyo.support.function.ContentConverter;
+
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
@@ -80,55 +85,127 @@ public final class ContentHelper {
     // ================================== static convenient methods ============================
 
     /**
-     * 使用 html 标签包装 {@link io.naivekyo.content.impl.TextContent} 内容
-     * @param content 文本内容
-     * @return html 内容
+     * 对 TextContent 内容进行转义, 去除潜在的危险脚本
+     * @param text 文档文本内容
+     * @return 转义后的文本
      */
-    public static String convertTextToHTML(String content) {
-        if (content == null)
+    public static String escapeTextContent(TextContent text) {
+        if (text == null)
             throw new NullPointerException("文本内容不能为 null");
-        Matcher matcher = HTML_LABEL_PATTERN.matcher(content);
-        if (matcher.matches()) {
-            content = matcher.replaceAll(SAFE_SCRIPT_STR);
+        return escapeTextContent(text, null);
+    }
+
+    /**
+     * 对 TextContent 内容进行转义, 去除潜在的危险脚本, 同时采用可能存在的转换器处理经过转义后的文本信息
+     * @param text 文档文本内容
+     * @param converter 转换器, 为 null 时不生效
+     * @return 转义后的文本
+     */
+    public static String escapeTextContent(TextContent text, ContentConverter<DocContent, String> converter) {
+        if (text == null)
+            throw new NullPointerException("文本内容不能为 null");
+        String content = text.getRawContent();
+        content = safeHTMLString(content);
+        content = WORD_TAB_SYMBOL_PATTERN.matcher(content).replaceAll("&nbsp;&nbsp;&nbsp;&nbsp;");
+       
+        if (converter != null) {
+            // TODO 后续考虑不使用 setter 方法, 而是使用 clone 对象适配转换函数
+            text.setRawContent(content);
+            content = converter.apply(text);
         }
+        
+        return content;
+    }
+
+    /**
+     * 使用 p 标签修饰指定文本
+     * @param text 目标文本数据
+     * @return p 标签修饰的 html 段落
+     */
+    public static String convertTextToHTML(String text) {
+        return String.format(TEXT_TO_HTML_WRAPPER, text);
+    }
+
+    /**
+     * 对文本内容中可能包含的 html 标签进行转义
+     * @param content 文本内容
+     * @return 转义后的字符串
+     */
+    public static String safeHTMLString(String content) {
+        Matcher matcher = HTML_LABEL_PATTERN.matcher(content);
+        if (matcher.matches())
+            content = matcher.replaceAll(SAFE_SCRIPT_STR);
         content = LEFT_ANGLE_BRACKET_PATTERN.matcher(content).replaceAll("&lt;");
         content = RIGHT_ANGLE_BRACKET_PATTERN.matcher(content).replaceAll("&gt;");
-        content = WORD_TAB_SYMBOL_PATTERN.matcher(content).replaceAll("&nbsp;&nbsp;&nbsp;&nbsp;");
-        return String.format(TEXT_TO_HTML_WRAPPER, content);
+        return content;
     }
 
     /**
-     * 使用 html 标签包装 {@link io.naivekyo.content.impl.ImageContent} 数据
-     * @param bytes 图片字节数组
-     * @param type 图片的类型, 全小写, 比如 png
-     * @return html 内容
+     * 使用 html 标签包装 ImageContent 数据
+     * @param image 文档图片内容
+     * @return 使用 img 标签修饰的 base64 形式的图片
      */
-    public static String convertImageToHtml(byte[] bytes, String type) {
-        return String.format(IMAGE_HTML_WRAPPER, type, base64Encode(bytes));
+    public static String convertImageContentToHtml(ImageContent image) {
+        return convertImageContentToHtml(image, null);
     }
 
     /**
-     * 将 {@link io.naivekyo.content.impl.TableContent} 内容输出为 html 格式
-     * @param tableData 表格数据
-     * @param row   最大行
-     * @param col   最大列
-     * @return  html 内容
+     * 使用自定义的转换函数处理文档图片内容, 转换函数无效时返回图片的 base64 字符串
+     * @param image 文档图片内容
+     * @param converter 自定义转换函数, 为 null 时将图片数据转换为 base64 字符串, 并使用 html 标签修饰
+     * @return  转换后的图片内容字符串
      */
-    public static String convertTableDataToHtml(List<List<String>> tableData, int row, int col) {
+    public static String convertImageContentToHtml(ImageContent image, ContentConverter<DocContent, String> converter) {
+        if (converter == null)
+            return String.format(IMAGE_HTML_WRAPPER, image.getFileType(), base64Encode(image.getRawData()));
+        else 
+            return converter.apply(image);
+    }
+
+    /**
+     * 将 TableContent 内容输出为 html 格式
+     * @param table 文档表格内容
+     * @return  使用 table 标签渲染的表格内容
+     */
+    public static String convertTableDataToHtml(TableContent table) {
+        return convertTableDataToHtml(table, null);
+    }
+
+    /**
+     * 将 TableContent 内容输出为 html 格式, 并采用可能存在的转换器对每个表格项进行处理
+     * @param table table 文档表格内容
+     * @param converter 自定义转换函数, 为 null 不生效, 否则对每个表格项适配转换函数
+     * @return 使用 table 标签渲染的表格内容
+     */
+    public static String convertTableDataToHtml(TableContent table, ContentConverter<DocContent, String> converter) {
+        List<List<TextContent>> tableData = table.getRawContent();
+        int row = table.getRowSize();
+        int col = table.getColSize();
         StringBuilder sb = new StringBuilder();
         sb.append("<div class=\"doc-table-box\"><table>");
         for (int i = 0; i < row; i++) {
             sb.append("<tr>");
-            List<String> tRow = tableData.get(i);
+            List<TextContent> tRow = tableData.get(i);
             for (int j = 0; j < col; j++) {
-                String text = null;
+                String text = EMPTY_STR;
                 if (col > tRow.size()) {
+                    // 如果当前行比最大列数要小, 剩余的部分填充空白
                     if (j > tRow.size() - 1)
-                        text = "";
+                        text = EMPTY_STR;
+                    else {
+                        TextContent textContent = tRow.get(j);
+                        if (converter == null)
+                            text = escapeTextContent(textContent);
+                        else 
+                            text = escapeTextContent(textContent, converter);
+                    }
+                } else {
+                    TextContent textContent = tRow.get(j);
+                    if (converter == null)
+                        text = textContent.getHTMLWrapContent();
                     else
-                        text = tRow.get(j);
-                } else
-                    text = tRow.get(j);
+                        text = textContent.getHTMLWrapContent(converter);
+                }
                 sb.append("<td>");
                 sb.append(text);
                 sb.append("</td>");

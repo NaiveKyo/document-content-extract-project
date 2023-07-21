@@ -1,8 +1,9 @@
 package io.naivekyo.content;
 
+import io.naivekyo.support.function.ContentConverter;
+
 /**
- * 文档内容接口 <br/>
- * TODO: 不同文档中会含有各类数据, 比如纯文本、图片(常规图片和文档中使用的特殊图片)、表格、附件 etc.
+ * <p>文档内容接口</p>
  * @author NaiveKyo
  * @version 1.0
  * @since 2023/7/10 22:22
@@ -10,21 +11,39 @@ package io.naivekyo.content;
 public interface DocContent {
 
     /**
-     * 获取原始内容 (文本/图片base64编码字符串)
+     * 获取原始内容
      * @return 内容
      */
     String getContent();
 
     /**
-     * 获取包装后的内容（文本/图片）
+     * 使用 HTML 标签对文档内容进行修饰
      * @return 使用 html 标签修饰的内容
      */
     String getHTMLWrapContent();
 
     /**
-     * 返回当前内容的类型
+     * 使用 HTML 标签对文档内容进行修饰, 并采用可能存在的转换函数
+     * @param converter 转换函数, null 则使用 {@link #getHTMLWrapContent()} 策略
+     * @return 使用 html 标签修饰的内容
+     */
+    String getHTMLWrapContent(ContentConverter<DocContent, String> converter);
+
+    /**
+     * 返回当前文档内容的类型
      * @return 内容的类型
      */
     ContentType getType();
+
+    /**
+     * 使用自定义的转换器对文档内容进行加工, 最终转换为字符串
+     * @param converter 转换器, 为 null 时采用 {@link #getHTMLWrapContent()} 策略
+     * @return 加工后的文本
+     */
+    default String getWrapContent(ContentConverter<DocContent, String> converter) {
+        if (converter == null)
+            return getHTMLWrapContent();
+        return converter.apply(this);
+    }
     
 }

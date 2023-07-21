@@ -3,6 +3,7 @@ package io.naivekyo.content.impl;
 import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.ContentType;
 import io.naivekyo.content.DocContent;
+import io.naivekyo.support.function.ContentConverter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -50,9 +51,14 @@ public class ImageContent implements DocContent {
 
     @Override
     public String getHTMLWrapContent() {
-        return ContentHelper.convertImageToHtml(getRawData(), getFileType());
+        return ContentHelper.convertImageContentToHtml(this);
     }
 
+    @Override
+    public String getHTMLWrapContent(ContentConverter<DocContent, String> converter) {
+        return ContentHelper.convertImageContentToHtml(this, converter);
+    }
+    
     @Override
     public ContentType getType() {
         return ContentType.IMAGE;
