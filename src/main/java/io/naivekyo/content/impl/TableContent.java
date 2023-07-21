@@ -104,7 +104,7 @@ public class TableContent implements DocContent {
         public TableContentBuilder addRow(List<String> row) {
             if (row == null || row.isEmpty())
                 throw new RuntimeException("表格行数据不能为空");
-            this.table.rawContent.add(row.stream().map(TextContent::new).collect(Collectors.toList()));
+            this.table.rawContent.add(row.stream().filter(ContentHelper::hasText).map(TextContent::new).collect(Collectors.toList()));
             return this;
         }
 
