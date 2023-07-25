@@ -21,8 +21,7 @@ import java.io.InputStream;
 /**
  * .doc 后缀的 Word 文件内容抽取器实现
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:37
+ * @since 1.0
  */
 public class HWPFWordContentExtractor extends AbstractContentExtractor {
 

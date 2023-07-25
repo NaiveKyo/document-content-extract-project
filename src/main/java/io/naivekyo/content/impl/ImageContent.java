@@ -14,8 +14,7 @@ import java.util.Objects;
  * <p>图片内容</p>
  * <p><b>thread-safe</b></p>
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:27
+ * @since 1.0
  */
 public class ImageContent implements DocContent {
     

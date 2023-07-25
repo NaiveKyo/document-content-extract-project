@@ -9,8 +9,7 @@ import java.util.List;
 /**
  * 抽象内容抽取器, 定义了一些基础属性和方法
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:34
+ * @since 1.0
  */
 public abstract class AbstractContentExtractor implements ContentExtractor{
 

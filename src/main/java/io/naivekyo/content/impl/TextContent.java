@@ -11,8 +11,7 @@ import java.util.Objects;
  * <p>纯文本内容</p>
  * <p><b>not-thread-safe</b></p>
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:25
+ * @since 1.0
  */
 public class TextContent implements DocContent {
 

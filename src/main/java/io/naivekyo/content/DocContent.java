@@ -38,7 +38,7 @@ public interface DocContent {
     /**
      * 使用自定义的转换器对文档内容进行加工, 最终转换为字符串
      * @param converter 转换器, 为 null 时采用 {@link #getHTMLWrapContent()} 策略
-     * @return 加工后的文本
+     * @return 加工后的文档内容字符串
      */
     default String getWrapContent(ContentConverter<DocContent, String> converter) {
         if (converter == null)

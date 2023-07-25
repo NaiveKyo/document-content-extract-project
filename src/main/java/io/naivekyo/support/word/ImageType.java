@@ -6,6 +6,8 @@ import org.apache.poi.xwpf.usermodel.Document;
  * 图片类型枚举, 适配 Word
  * @see org.apache.poi.xwpf.usermodel.Document
  * @see org.apache.poi.sl.usermodel.PictureData.PictureType
+ * @author NaiveKyo
+ * @since 1.0
  */
 public enum ImageType {
 

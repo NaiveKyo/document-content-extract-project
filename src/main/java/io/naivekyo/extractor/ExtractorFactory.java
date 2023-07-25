@@ -14,8 +14,7 @@ import java.io.InputStream;
 /**
  * 内容抽取器 factory class, 包含快速创建抽取器的静态工厂方法, 以及其他一些便捷的方法
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:35
+ * @since 1.0
  */
 public final class ExtractorFactory {
 

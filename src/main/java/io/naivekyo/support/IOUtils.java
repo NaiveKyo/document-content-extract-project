@@ -25,6 +25,8 @@ import java.util.List;
 
 /**
  * io fundamental facilities class
+ * @author NaiveKyo
+ * @since 1.0
  */
 public class IOUtils {
 

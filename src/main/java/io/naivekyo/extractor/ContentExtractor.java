@@ -7,8 +7,7 @@ import java.util.List;
 /**
  * 文档内容抽取接口
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:33
+ * @since 1.0
  */
 public interface ContentExtractor {
 

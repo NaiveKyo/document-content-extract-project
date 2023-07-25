@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
  * <p>.ppt 后缀的 ppt 文件内容抽取器实现</p>
  * @see <a href="https://svn.apache.org/repos/asf/poi/trunk/poi-examples/src/main/java/org/apache/poi/examples/">apache poi examples</a>
  * @see <a href="https://svn.apache.org/repos/asf/poi/trunk/poi-examples/src/main/java/org/apache/poi/examples/hslf/DataExtraction.java">DataExtraction.java</a>
+ * @author NaiveKyo
+ * @since 1.0
  */
 @SuppressWarnings("rawtypes")
 public class HSLFPPTContentExtractor extends AbstractContentExtractor {

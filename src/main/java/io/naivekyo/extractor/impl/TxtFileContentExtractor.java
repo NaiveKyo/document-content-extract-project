@@ -13,8 +13,7 @@ import java.io.InputStreamReader;
 /**
  * .txt 文本文件内容抽取器实现
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:36
+ * @since 1.0
  */
 public class TxtFileContentExtractor extends AbstractContentExtractor {
 

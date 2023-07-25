@@ -17,8 +17,7 @@ import java.util.stream.Collectors;
 /**
  * 测试类
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:30
+ * @since 1.0
  */
 public class DocExtractorTest {
 

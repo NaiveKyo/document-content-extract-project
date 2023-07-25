@@ -14,8 +14,7 @@ import java.util.stream.Collectors;
  * <p>word 表格内容(当前版本只存储文本, 不考虑图片)</p>
  * <p><b>not thread-safe</b></p>
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:29
+ * @since 1.0
  */
 public class TableContent implements DocContent {
     

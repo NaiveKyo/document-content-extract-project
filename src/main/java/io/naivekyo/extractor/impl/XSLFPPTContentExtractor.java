@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
  * .pptx 后缀的 ppt 文件内容抽取器实现
  * @see <a href="https://svn.apache.org/repos/asf/poi/trunk/poi-examples/src/main/java/org/apache/poi/examples/">examples</a>
  * @see <a href="https://svn.apache.org/repos/asf/poi/trunk/poi-examples/src/main/java/org/apache/poi/examples/xslf/">XSLF Examples</a>
+ * @author NaiveKyo
+ * @since 1.0
  */
 public class XSLFPPTContentExtractor extends AbstractContentExtractor {
 

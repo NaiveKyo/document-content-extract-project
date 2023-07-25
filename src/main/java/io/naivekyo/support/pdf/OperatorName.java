@@ -3,6 +3,8 @@ package io.naivekyo.support.pdf;
 /**
  * @deprecated prefer to {@link org.apache.pdfbox.contentstream.operator.OperatorName}
  * @see <a href="https://svn.apache.org/viewvc/pdfbox/branches/2.0/pdfbox/src/main/java/org/apache/pdfbox/contentstream/operator/OperatorName.java?revision=1857951&view=markup">apache pdfbox OperatorName.java</a>
+ * @author NaiveKyo
+ * @since 1.0
  */
 public class OperatorName {
 

@@ -3,8 +3,7 @@ package io.naivekyo.content;
 /**
  * 文档内容对应的类型
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:22
+ * @since 1.0
  */
 public enum ContentType {
 

@@ -21,8 +21,7 @@ import java.util.regex.Pattern;
 /**
  * 文档内容 helper class, 包含一些属性和工具方法
  * @author NaiveKyo
- * @version 1.0
- * @since 2023/7/10 22:25
+ * @since 1.0
  */
 public final class ContentHelper {
     

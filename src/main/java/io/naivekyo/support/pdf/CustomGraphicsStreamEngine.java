@@ -27,6 +27,8 @@ import java.util.Map;
 
 /**
  * 扩展 PDFGraphicsStreamEngine 定制图片处理方案
+ * @author NaiveKyo
+ * @since 1.0
  */
 public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
 

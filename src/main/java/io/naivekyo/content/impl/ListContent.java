@@ -12,6 +12,8 @@ import java.util.Objects;
 /**
  * <p>保存 ppt 文件的 TextBox 对应的列表内容, 目前仅支持文本内容</p>
  * <p><b>not thread-safe</b></p>
+ * @author NaiveKyo
+ * @since 1.0
  */
 public class ListContent implements DocContent {
     
