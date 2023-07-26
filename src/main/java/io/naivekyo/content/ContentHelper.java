@@ -108,7 +108,7 @@ public final class ContentHelper {
         content = WORD_TAB_SYMBOL_PATTERN.matcher(content).replaceAll("&nbsp;&nbsp;&nbsp;&nbsp;");
        
         if (converter != null) {
-            // TODO 后续考虑不使用 setter 方法, 而是使用 clone 对象适配转换函数
+            // TODO 为了保证内容的 immutable, 后续考虑不使用 setter 方法, 而是使用 clone 对象或者序列化机制适配转换函数
             text.setRawContent(content);
             content = converter.apply(text);
         }
