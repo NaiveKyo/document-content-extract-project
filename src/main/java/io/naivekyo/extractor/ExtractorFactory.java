@@ -1,10 +1,12 @@
 package io.naivekyo.extractor;
 
 import io.naivekyo.extractor.impl.HSLFPPTContentExtractor;
+import io.naivekyo.extractor.impl.HSSFExcelContentExtractor;
 import io.naivekyo.extractor.impl.HWPFWordContentExtractor;
 import io.naivekyo.extractor.impl.PDFFileContentExtractor;
 import io.naivekyo.extractor.impl.TxtFileContentExtractor;
 import io.naivekyo.extractor.impl.XSLFPPTContentExtractor;
+import io.naivekyo.extractor.impl.XSSFExcelContentExtractor;
 import io.naivekyo.extractor.impl.XWPFWordContentExtractor;
 import org.apache.poi.poifs.filesystem.FileMagic;
 
@@ -110,6 +112,24 @@ public final class ExtractorFactory {
             return new XSLFPPTContentExtractor(prepareIs);
         else
             throw new RuntimeException("未知的 ppt 文件类型");
+    }
+
+    /**
+     * factory method: create .xls file extractor
+     * @param is 文档输入流
+     * @return .xls 文件内容抽取器实例
+     */
+    public static ContentExtractor createHSSFExcelExtractor(InputStream is) {
+        return new HSSFExcelContentExtractor(is);
+    }
+
+    /**
+     * factory method: create .xlsx file extractor
+     * @param is 文档输入流
+     * @return .xlsx 文件内容抽取器实例
+     */
+    public static ContentExtractor createXSSFExcelExtractor(InputStream is) {
+        return new XSSFExcelContentExtractor(is);
     }
     
 }

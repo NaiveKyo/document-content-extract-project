@@ -148,14 +148,10 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
                             LOG.warn(String.format("TODO: 处理 .pptx 文件时, 读取到无法处理的 mime-type 文件, 数据类型: %s", picData.getContentType()));
                             continue;
                         }
-                        if (PictureData.PictureType.WDP.equals(pt)) {
-                            LOG.warn("pptx 文件, 暂不处理 Microsoft Windows Media Photo image (.wdp) 图片文件");
-                            continue;
-                        }
-                        String mimeType = pt.contentType;
-                        String extension = pt.extension;
-                        getContents().add(new ImageContent(data, mimeType, extension.substring(extension.indexOf(".") + 1)));
+                        extractPicture(data, pt);
                     }
+                } else {
+                    LOG.warn(String.format("pptx 文件, 无效的共享图片资源名称, name: %s", name));
                 }
             }
         } catch (IOException e) {
@@ -370,6 +366,8 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
      * @throws IOException IOException
      */
     private void handlePicture(int page, XSLFPictureData pictureData) throws IOException {
+        if (pictureData == null)
+            return;
         PictureData.PictureType pt = pictureData.getType();
         if (pt == null) {
             LOG.error(String.format("处理 .pptx 文件时, 读取到无效的图片数据, 页码: %s, 数据类型: %s", page == -1 ? "母版" : page, pictureData.getContentType()));
@@ -396,7 +394,7 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
             data = IOUtils.convertEMFToPNG(data);
             getContents().add(new ImageContent(data, ImageType.PNG.getMimeType(), ImageType.PNG.getExtension()));
         } else if (PictureData.PictureType.WDP.equals(pt)) {
-            LOG.warn("暂不处理 Microsoft Windows Media Photo image (.wdp) 图片文件");
+            LOG.warn("pptx 文件, 暂不处理 Microsoft Windows Media Photo image (.wdp) 图片文件");
         } else {
             getContents().add(new ImageContent(data, mimeType, extension.substring(extension.indexOf(".") + 1)));
         }

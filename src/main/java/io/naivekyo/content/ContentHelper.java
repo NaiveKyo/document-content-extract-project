@@ -4,6 +4,8 @@ import io.naivekyo.content.impl.ImageContent;
 import io.naivekyo.content.impl.TableContent;
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.support.function.ContentConverter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -24,6 +26,24 @@ import java.util.regex.Pattern;
  * @since 1.0
  */
 public final class ContentHelper {
+    
+    private static final Log LOG = LogFactory.getLog(ContentHelper.class);
+
+    public static String SYSTEM_NEW_LINE_SYMBOL;
+
+    static {
+        // Consider the differences between platforms
+        String os = System.getProperty("os.name");
+        LOG.info("Content Extract Module :: Deploy System Type: " + os);
+        if (os.contains("Windows"))
+            SYSTEM_NEW_LINE_SYMBOL = "\r\n";
+        else if (os.contains("Linux"))
+            SYSTEM_NEW_LINE_SYMBOL = "\n";
+        else {
+            LOG.warn("Unknown System type: " + os);
+            SYSTEM_NEW_LINE_SYMBOL = "\r\n|\n";
+        }
+    }
     
     private ContentHelper() {
     }

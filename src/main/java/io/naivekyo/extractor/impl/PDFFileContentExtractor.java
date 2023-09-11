@@ -45,6 +45,12 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
     private static final Log LOG = LogFactory.getLog(PDFFileContentExtractor.class);
     
     private PDFTextStripper textStripper;
+
+    // see https://pdfbox.apache.org/2.0/getting-started.html
+    // Important notice when using PDFBox with Java 8 before 1.8.0_191 or Java 9 before 9.0.4
+    static {
+        System.setProperty("sun.java2d.cmm", "sun.java2d.cmm.kcms.KcmsServiceProvider");
+    }
     
     public PDFFileContentExtractor(InputStream docByteStream) {
         super(docByteStream);
@@ -67,7 +73,7 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
                     String pageText = this.extractByTextStripper(pdfDocument, i);
                     if (pageText != null) {
                         pageText = pageText.trim();
-                        String[] split = pageText.split("\r\n");
+                        String[] split = pageText.split(ContentHelper.SYSTEM_NEW_LINE_SYMBOL);
                         List<TextContent> texts = Arrays.stream(split).filter(ContentHelper::checkValidText).map(TextContent::new).collect(Collectors.toList());
                         for (int j = 0; j < texts.size() - 1; j++) {
                             getContents().add(texts.get(j));

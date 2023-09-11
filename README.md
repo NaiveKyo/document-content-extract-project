@@ -25,6 +25,8 @@
 
 按页抽取文本和图片内容, 页内按照读取顺序显示;
 
-- TODO
+- .xls & .xlsx TODO
+
+TODO: 使用 apache poi 解析 excel, 考虑到内存问题, 针对 xlsx 文件, 可以探索使用 SAX 或者 poi 提供的 Stream API 去处理文件, 后续学习底层数据结构, 分析 EasyExcel 源码中是如何降低内存的。
 
 持续完善功能...

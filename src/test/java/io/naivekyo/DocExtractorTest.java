@@ -81,4 +81,11 @@ public class DocExtractorTest {
         IOUtils.writeToTxtFile(new File(""), collect);
     }
 
+    @Test
+    public void testHSSFExcelExtract() {
+        ContentExtractor extractor = ExtractorFactory.createHSSFExcelExtractor(is);
+        List<DocContent> contents = extractor.extract();
+        List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
+        IOUtils.writeToTxtFile(new File(""), collect);
+    }
 }
