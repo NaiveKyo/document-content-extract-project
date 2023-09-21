@@ -1,6 +1,7 @@
 package io.naivekyo.extractor;
 
 import io.naivekyo.content.DocContent;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -12,7 +13,12 @@ import java.util.List;
  * @since 1.0
  */
 public abstract class AbstractContentExtractor implements ContentExtractor{
-
+    
+    // static {
+    //     // cancel apache poi secure limit to permit 'zip bomb'
+    //     ZipSecureFile.setMinInflateRatio(0.001d);
+    // }
+    
     /**
      * 文档的字节输入流
      */
