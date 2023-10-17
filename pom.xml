@@ -72,6 +72,27 @@
             <version>2.0.29</version>
         </dependency>
 
+        <!-- java advanced imaging image I/O tools -->
+        <dependency>
+            <groupId>com.github.jai-imageio</groupId>
+            <artifactId>jai-imageio-core</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
+        <!-- JPEG2000 support for java advanced imaging image I/O tools -->
+        <dependency>
+            <groupId>com.github.jai-imageio</groupId>
+            <artifactId>jai-imageio-jpeg2000</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
+        <!--  JBIG2 library -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>jbig2-imageio</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+
         <!-- jol is the tiny toolbox to analyze object layout in JVMs. -->
         <dependency>
             <groupId>org.openjdk.jol</groupId>
@@ -79,7 +100,6 @@
             <version>0.17</version>
             <scope>provided</scope>
         </dependency>
-
 
     </dependencies>
     
