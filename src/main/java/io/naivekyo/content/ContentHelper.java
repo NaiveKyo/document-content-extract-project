@@ -270,7 +270,11 @@ public final class ContentHelper {
      * @return true 表示有效, 反之则是 false
      */
     public static boolean checkValidText(String content) {
-        return content != null && !WORD_NO_VALID_TEXT.contains(content) && hasText(content);
+        if (content != null) {
+            String trim = content.trim();
+            return !WORD_NO_VALID_TEXT.contains(trim) && hasText(trim);
+        }
+        return false;
     }
 
     /**

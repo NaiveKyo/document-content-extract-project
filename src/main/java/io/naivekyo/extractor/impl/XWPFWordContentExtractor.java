@@ -155,7 +155,10 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
             }
         }
         if (sb != null) {
-            this.getContents().add(new TextContent(ContentHelper.cleanExtractedText(sb.toString())));
+            String text = sb.toString();
+            if (ContentHelper.checkValidText(text)) {
+                this.getContents().add(new TextContent(ContentHelper.cleanExtractedText(text)));
+            }
         }
     }
     
