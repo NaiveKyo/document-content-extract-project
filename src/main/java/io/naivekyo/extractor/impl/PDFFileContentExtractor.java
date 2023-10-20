@@ -81,7 +81,7 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
                     }
                     
                     // 处理图片
-                    CustomGraphicsStreamEngine engine = new CustomGraphicsStreamEngine(pdfPage, i);
+                    CustomGraphicsStreamEngine engine = new CustomGraphicsStreamEngine(pdfPage);
                     engine.run();
                     List<DocContent> images = engine.getContents();
                     if (images != null && !images.isEmpty())
@@ -89,6 +89,7 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
                 }
             } else {
                 LOG.error("没有权限读取当前 pdf 文件的内容");
+                throw new RuntimeException("没有权限读取该 pdf 文件");
             }
         } catch (IOException e) {
             markEx = e;

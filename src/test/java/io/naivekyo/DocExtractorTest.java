@@ -4,6 +4,7 @@ import io.naivekyo.content.DocContent;
 import io.naivekyo.extractor.ContentExtractor;
 import io.naivekyo.extractor.ExtractorFactory;
 import io.naivekyo.support.IOUtils;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -25,9 +26,21 @@ public class DocExtractorTest {
     
     public static InputStream is = null;
     
+    public static long start;
+    
+    public static long end;
+    
     @BeforeAll
     public static void beforeAll() throws FileNotFoundException {
         is = new FileInputStream(FILE_PATH);
+        System.out.println("before process...");
+        start = System.currentTimeMillis();
+    }
+    
+    @AfterAll
+    public static void afterAll() {
+        end = System.currentTimeMillis();
+        System.out.println("process finished, cost time: " + (end - start) / 1000 + " s");
     }
     
     @Test
@@ -62,7 +75,8 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorFactory.createPDFFileExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File(""), collect);
+        IOUtils.writeToTxtFile(
+                new File(""), collect);
     }
     
     @Test
@@ -78,7 +92,6 @@ public class DocExtractorTest {
         ContentExtractor extractor = ExtractorFactory.createXSLFPPTExtractor(is);
         List<DocContent> contents = extractor.extract();
         List<String> collect = contents.stream().map(DocContent::getHTMLWrapContent).collect(Collectors.toList());
-        IOUtils.writeToTxtFile(new File(""), collect);
     }
 
     @Test

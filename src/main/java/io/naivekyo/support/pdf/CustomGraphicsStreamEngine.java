@@ -5,13 +5,21 @@ import io.naivekyo.content.impl.ImageContent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
-import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSStream;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceGray;
+import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.graphics.color.PDPattern;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.apache.pdfbox.pdmodel.graphics.image.PDInlineImage;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDAbstractPattern;
+import org.apache.pdfbox.pdmodel.graphics.pattern.PDTilingPattern;
+import org.apache.pdfbox.pdmodel.graphics.state.PDGraphicsState;
+import org.apache.pdfbox.pdmodel.graphics.state.RenderingMode;
 import org.apache.pdfbox.util.Matrix;
 import org.apache.pdfbox.util.Vector;
 
@@ -20,13 +28,19 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * 扩展 PDFGraphicsStreamEngine 定制图片处理方案
+ * @see <a href="https://svn.apache.org/viewvc/pdfbox/branches/">https://svn.apache.org/viewvc/pdfbox/branches/</a>
+ * @see <a href="https://svn.apache.org/viewvc/pdfbox/branches/2.0/tools/">https://svn.apache.org/viewvc/pdfbox/branches/2.0/tools/</a>
+ * @see <a href="https://svn.apache.org/viewvc/pdfbox/branches/2.0/tools/src/main/java/org/apache/pdfbox/tools/ExtractImages.java?view=markup">https://svn.apache.org/viewvc/pdfbox/branches/2.0/tools/src/main/java/org/apache/pdfbox/tools/ExtractImages.java?view=markup</a>
  * @author NaiveKyo
  * @since 1.0
  */
@@ -34,15 +48,16 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
 
     private static final Log LOG = LogFactory.getLog(CustomGraphicsStreamEngine.class);
 
-    private static final Object DUMMY_OBJ = new Object();
-    
-    private int pageNum;
-
     /**
-     * 图片去重使用的 map
+     * 临时存储一些 duplicate pdf stream object, 用于图片去重
      */
-    private Map<BufferedImage, Object> distinctImage = new HashMap<>();
-    
+    private final Set<COSStream> seen = new HashSet<>();
+
+    private static final List<String> JPEG = Arrays.asList(
+            COSName.DCT_DECODE.getName(),
+            COSName.DCT_DECODE_ABBREVIATION.getName()
+    );
+
     private List<DocContent> contents;
     
     /**
@@ -53,19 +68,6 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
     public CustomGraphicsStreamEngine(PDPage page) {
         super(page);
     }
-
-    /**
-     * Constructor.
-     * 
-     * @param page  A page in a PDF document.
-     * @param pageNum page number
-     */
-    public CustomGraphicsStreamEngine(PDPage page, int pageNum) {
-        super(page);
-        this.pageNum = pageNum;
-    }
-
-    // ================================= 扩展方法 ==============================
 
     /**
      * Runs the engine on the current page.
@@ -84,8 +86,6 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
         return this.contents;
     }
     
-    // ================================= 默认实现 ==============================
-
     @Override
     public void appendRectangle(Point2D p0, Point2D p1, Point2D p2, Point2D p3) throws IOException {
     }
@@ -94,33 +94,148 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
     public void drawImage(PDImage pdImage) throws IOException {
         if (contents == null)
             contents = new ArrayList<>();
-        BufferedImage image = pdImage.getImage();
-        boolean distinct = distinctImage.put(image, DUMMY_OBJ) == null;
+        
+        // An external image object. (i.e. pdf 嵌入的外部图片)
         if (pdImage instanceof PDImageXObject) {
-            // 只能通过 PDImageXObject 形式获取 pdf 嵌入的外部图片资源
-            PDImageXObject imageXObject = (PDImageXObject) pdImage;
-            if (distinct) {
-                String fileType = imageXObject.getSuffix();
-                if (fileType == null) {
-                    LOG.error("解析 .pdf 文件时, 从 PDImageXObject 读取到未知的图片类型");
-                } else {
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    ImageIO.write(image, fileType, baos);
-                    this.contents.add(new ImageContent(baos.toByteArray(), fileType));
+            if (pdImage.isStencil()) {
+                processColor(getGraphicsState().getNonStrokingColor());
+            }
+            PDImageXObject xObject = (PDImageXObject) pdImage;
+            if (seen.contains(xObject.getCOSObject())) {
+                // skip duplicate image
+                return;
+            }
+            seen.add(xObject.getCOSObject());
+        }
+        
+        // save image
+        write2ImageContent(pdImage);
+    }
+
+    /**
+     * find out if it is a tiling pattern, then process that one
+     * @param color A color value
+     */
+    private void processColor(PDColor color) throws IOException {
+        if (color.getColorSpace() instanceof PDPattern) {
+            PDPattern pattern = (PDPattern) color.getColorSpace();
+            PDAbstractPattern abstractPattern = pattern.getPattern(color);
+            if (abstractPattern instanceof PDTilingPattern) {
+                processTilingPattern(((PDTilingPattern) abstractPattern), null, null);
+            }
+        }
+    }
+
+    private void write2ImageContent(PDImage pdImage) throws IOException {
+        String suffix = pdImage.getSuffix();
+        if (suffix == null || "jb2".equals(suffix)) {
+            suffix = "png";
+        } else if ("jpx".equals(suffix)) {
+            // use jp2 suffix for file because jpx not known by windows
+            suffix = "jp2";
+        }
+        
+        if (hasMasks(pdImage)) {
+            // TIKA-3040, PDFBOX-4771: can't save ARGB as JPEG
+            suffix = "png";
+        }
+
+        // 如果可行的话, 就 write raw image, 但是这里没法获得图片透明度(alpha information)
+        BufferedImage image = pdImage.getRawImage();
+        if (image != null) {
+            int elements = image.getRaster().getNumDataElements();
+            suffix = "png";
+            if (elements > 3) {
+                // 图片的 channel 超过 3 个, 有点像 CMYK, 这里使用 tiff 文件格式
+                // 但是需要 class path 中有 TIFF codec 才能正常工作
+                suffix = "tiff";
+            }
+            doImageExtract(image, suffix);
+            return;
+        }
+        
+        if ("jpg".equals(suffix)) {
+            String colorSpaceName = pdImage.getColorSpace().getName();
+            if (PDDeviceGray.INSTANCE.getName().equals(colorSpaceName) || PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)) {
+                // RGB or Gray colorspace: get and write the unmodified JPEG stream
+                InputStream data = pdImage.createInputStream(JPEG);
+                doImageExtract(data, suffix);
+            } else {
+                // for CMYK and other "unusual" colorspaces, the JPEG will be converted
+                image = pdImage.getImage();
+                if (image != null) {
+                    doImageExtract(image, suffix);
                 }
             }
-        } else if (pdImage instanceof PDInlineImage) {
-            // pdf 中使用特殊表达式生成的图片
-            PDInlineImage inlineImage = (PDInlineImage) pdImage;
-            if (distinct) {
-                String fileType = inlineImage.getSuffix();
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(image, fileType, baos);
-                this.contents.add(new ImageContent(baos.toByteArray(), fileType));
+        } else if ("jp2".equals(suffix)) {
+            String colorSpaceName = pdImage.getColorSpace().getName();
+            if (PDDeviceGray.INSTANCE.getName().equals(colorSpaceName) || PDDeviceRGB.INSTANCE.getName().equals(colorSpaceName)) {
+                // RGB or Gray colorspace: get and write the unmodified JPEG2000 stream
+                InputStream data = pdImage.createInputStream(Collections.singletonList(COSName.JPX_DECODE.getName()));
+                doImageExtract(data, suffix);
+            } else {
+                // for CMYK and other "unusual" colorspaces, the image will be converted
+                image = pdImage.getImage();
+                if (image != null) {
+                    doImageExtract(image, "jpeg2000");
+                }
             }
+        } else if ("tiff".equals(suffix) && pdImage.getColorSpace().equals(PDDeviceGray.INSTANCE)) {
+            image = pdImage.getImage();
+            if (image == null)
+                return;
+            // CCITT compressed images can have a different colorspace, but this one is B/W
+            // This is a bitonal image, so copy to TYPE_BYTE_BINARY
+            // so that a G4 compressed TIFF image is created by ImageIOUtil.writeImage()
+            int w = image.getWidth();
+            int h = image.getHeight();
+            BufferedImage bitonalImage = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY);
+            // copy image the old fashioned way - ColorConvertOp is slower!
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    bitonalImage.setRGB(x, y, image.getRGB(x, y));
+                }
+            }
+            doImageExtract(bitonalImage, suffix);
         } else {
-            LOG.error(String.format("未知的 pdf 图片类型, %s", pdImage.getClass().getName()));
+            image = pdImage.getImage();
+            if (image != null) {
+                doImageExtract(image, suffix);
+            }
         }
+    }
+    
+    private boolean hasMasks(PDImage pdImage) throws IOException {
+        if (pdImage instanceof PDImageXObject) {
+            PDImageXObject xImg = (PDImageXObject) pdImage;
+            return xImg.getMask() != null || xImg.getSoftMask() != null;
+        }
+        return false;
+    }
+
+    /**
+     * @param image {@link java.awt.image.RenderedImage}
+     * @param suffix image type, e.g. png
+     */
+    private void doImageExtract(BufferedImage image, String suffix) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, suffix, baos);
+        this.contents.add(new ImageContent(baos.toByteArray(), suffix));
+    }
+
+    private void doImageExtract(InputStream is, String suffix) throws IOException {
+        Exception bakE = null;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            IOUtils.copy(is, baos);
+            this.contents.add(new ImageContent(baos.toByteArray(), suffix));
+        } catch (IOException e) {
+            bakE = e;
+        } finally {
+            IOUtils.closeQuietly(is);
+        }
+        if (bakE != null)
+            throw new IOException(bakE);
     }
 
     @Override
@@ -154,35 +269,33 @@ public class CustomGraphicsStreamEngine extends PDFGraphicsStreamEngine {
 
     @Override
     public void strokePath() throws IOException {
+        processColor(getGraphicsState().getStrokingColor());
     }
 
     @Override
     public void fillPath(int windingRule) throws IOException {
+        processColor(getGraphicsState().getNonStrokingColor());
     }
 
     @Override
     public void fillAndStrokePath(int windingRule) throws IOException {
+        processColor(getGraphicsState().getNonStrokingColor());
     }
 
     @Override
     public void shadingFill(COSName shadingName) throws IOException {
     }
 
-    // ================================= TODO 定制操作 ==============================
-    
-    @Override
-    public void showTextString(byte[] string) throws IOException {
-        super.showTextString(string);
-    }
-
-    @Override
-    public void showTextStrings(COSArray array) throws IOException {
-        super.showTextStrings(array);
-    }
-
     @Override
     protected void showGlyph(Matrix textRenderingMatrix, PDFont font, int code, Vector displacement) throws IOException {
-        super.showGlyph(textRenderingMatrix, font, code, displacement);
+        PDGraphicsState graphicsState = getGraphicsState();
+        RenderingMode renderingMode = graphicsState.getTextState().getRenderingMode();
+        if (renderingMode.isFill()) {
+            processColor(graphicsState.getNonStrokingColor());
+        }
+        if (renderingMode.isStroke()) {
+            processColor(graphicsState.getStrokingColor());
+        }
     }
     
 }
