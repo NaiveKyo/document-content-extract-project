@@ -129,6 +129,8 @@ public class XWPFWordContentExtractor extends AbstractContentExtractor {
                 // 图片来源可能是: 插入的图片、内嵌的图片、画布
                 for (XWPFPicture picture : embeddedPictures) {
                     XWPFPictureData pictureData = picture.getPictureData();
+                    if (pictureData == null)
+                        continue;
                     byte[] data = pictureData.getData();
                     int typeId = pictureData.getPictureType();
                     ImageType imageType = ImageType.lookupByTypeId(typeId);
