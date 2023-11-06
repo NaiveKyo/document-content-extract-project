@@ -1,10 +1,12 @@
 package io.naivekyo.extractor;
 
 import io.naivekyo.content.ContentHelper;
+import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hwpf.extractor.WordExtractor;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
@@ -22,6 +24,11 @@ import java.util.stream.Collectors;
  * @since 1.0
  */
 public class ExtractHelper {
+
+    static {
+        // 取消 apache poi 中关于 'zip bomb' 的安全限制
+        ZipSecureFile.setMinInflateRatio(0.001d);
+    }
     
     /**
      * 抽取 txt 文件的所有文本内容
@@ -146,6 +153,74 @@ public class ExtractHelper {
         
         if (pageTexts.isEmpty())
             return null;
+        return pageTexts;
+    }
+
+    /**
+     * 按页、业内按段的形式抽取 pdf 文本内容
+     * @param is    文档输入流
+     * @return  按段落拆分的所有文本, 未抽取到文本内容则返回 null
+     * @throws IOException  IO 相关异常
+     */
+    public static List<String> pdfTextExtractPageSegment(InputStream is) throws IOException {
+        List<String> pageTexts = null;
+        try (PDDocument document = PDDocument.load(is, MemoryUsageSetting.setupTempFileOnly())) {
+            AccessPermission ap = document.getCurrentAccessPermission();
+            if (!ap.canExtractContent()) {
+                throw new IOException("You do not have permission to extract text");
+            }
+            PDFTextStripper stripper = new PDFTextStripper();
+
+            int pageNum = document.getNumberOfPages();
+            if (pageNum < 1){
+                return null;
+            }
+            pageTexts = new ArrayList<>();
+
+            String lastParagraph = "";  // 当前页的最后一段文本
+            for (int i = 0; i < pageNum; i++) {
+                stripper.setStartPage(i + 1);
+                stripper.setEndPage(i + 1);
+                String pageFullText = stripper.getText(document);
+                if (ContentHelper.hasText(pageFullText)) {
+                    String[] split = pageFullText.trim().split(ContentHelper.SYSTEM_NEW_LINE_SYMBOL + "\\s");
+                    // 获取当前页的文本: 按段落拆分
+                    List<String> cleanTexts = Arrays.stream(split).filter(t -> {
+                        boolean equals = "".equals(t.trim());
+                        return !equals;
+                    }).map(t -> t.trim().replaceAll(ContentHelper.SYSTEM_NEW_LINE_SYMBOL, "")).collect(Collectors.toList());
+
+                    StringBuilder tmp = new StringBuilder();
+                    boolean last = false;
+                    if (!cleanTexts.isEmpty()) {
+                        // 多段合并
+                        for (int j = 0; j < cleanTexts.size(); j++) {
+                            String paragraph = cleanTexts.get(j);
+                            last = j == cleanTexts.size() - 1;  // 最后一段
+                            if (j == 0) {
+                                // 当前页面第一段文本需要追加上一页的最后一段文本
+                                tmp.append(lastParagraph);
+                            }
+                            if (paragraph != null && !"".equals(paragraph)) {
+                                if (last && i != pageNum - 1) {
+                                    // 考虑到最后一段跨页的情况, 这里直接将当前页最后一段文本放到下一页去
+                                    // 注意最后一页的情况
+                                    lastParagraph = paragraph;
+                                } else {
+                                    tmp.append(paragraph);
+                                }
+                                pageTexts.add(tmp.toString());
+                                tmp = new StringBuilder();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (pageTexts.isEmpty()){
+            return null;
+        }
         return pageTexts;
     }
     
