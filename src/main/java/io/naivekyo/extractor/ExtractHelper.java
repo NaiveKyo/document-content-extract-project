@@ -157,7 +157,7 @@ public class ExtractHelper {
     }
 
     /**
-     * 按页、业内按段的形式抽取 pdf 文本内容
+     * 按页、页内按段的形式抽取 pdf 文本内容
      * @param is    文档输入流
      * @return  按段落拆分的所有文本, 未抽取到文本内容则返回 null
      * @throws IOException  IO 相关异常
