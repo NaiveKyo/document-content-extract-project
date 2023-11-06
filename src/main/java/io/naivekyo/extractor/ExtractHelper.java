@@ -125,7 +125,7 @@ public class ExtractHelper {
      */
     public static List<String> pdfTextExtract(InputStream is, boolean sortByPosition) throws IOException {
         List<String> pageTexts = null;
-        try (PDDocument document = PDDocument.load(is)) {
+        try (PDDocument document = PDDocument.load(is, MemoryUsageSetting.setupTempFileOnly())) {
             AccessPermission ap = document.getCurrentAccessPermission();
             if (!ap.canExtractContent()) {
                 throw new IOException("You do not have permission to extract text");

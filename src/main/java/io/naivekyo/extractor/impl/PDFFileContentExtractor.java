@@ -13,6 +13,7 @@ import org.apache.pdfbox.contentstream.operator.OperatorName;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.cos.COSString;
+import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.pdfparser.PDFStreamParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -61,7 +62,7 @@ public class PDFFileContentExtractor extends AbstractContentExtractor {
         PDDocument pdfDocument = null;
         Exception markEx = null;
         try {
-            pdfDocument = PDDocument.load(getDocByteStream());
+            pdfDocument = PDDocument.load(getDocByteStream(), MemoryUsageSetting.setupTempFileOnly());
             AccessPermission ap = pdfDocument.getCurrentAccessPermission();
             boolean canExtract = ap.canExtractForAccessibility();
             if (canExtract) {
