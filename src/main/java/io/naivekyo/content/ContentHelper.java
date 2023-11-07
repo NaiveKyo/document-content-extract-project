@@ -29,22 +29,8 @@ public final class ContentHelper {
     
     private static final Log LOG = LogFactory.getLog(ContentHelper.class);
 
-    public static String SYSTEM_NEW_LINE_SYMBOL;
+    public static String SYSTEM_NEW_LINE_SYMBOL = System.getProperty("line.separator");
 
-    static {
-        // Consider the differences between platforms
-        String os = System.getProperty("os.name");
-        LOG.info("Content Extract Module :: Deploy System Type: " + os);
-        if (os.contains("Windows"))
-            SYSTEM_NEW_LINE_SYMBOL = "\r\n";
-        else if (os.contains("Linux"))
-            SYSTEM_NEW_LINE_SYMBOL = "\n";
-        else {
-            LOG.warn("Unknown System type: " + os);
-            SYSTEM_NEW_LINE_SYMBOL = "\r\n|\n";
-        }
-    }
-    
     private ContentHelper() {
     }
 
