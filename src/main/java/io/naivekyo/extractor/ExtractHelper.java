@@ -285,13 +285,13 @@ public class ExtractHelper {
 
     /**
      * 抽取 pdf 每个页面中的所有文本片段, 尝试基于特定的规则将文本片段合并为多个文本段落, 返回所有的文本段落集合 <br/>
-     * 注: 默认段落字数阈值 300
+     * 注: 默认段落字数阈值 300, 段落最大字数影响因子 0.5f
      * @param is 文档输入流
      * @return 一个 pdf 文档中所有的文本段落集合
      * @throws Exception 文档抽取过程中可能会出现异常
      */
     public static List<DocumentParagraph> pdfTextExtract2Paragraphs(InputStream is) throws Exception {
-        return pdfTextExtract2Paragraphs(is, false, 300);
+        return pdfTextExtract2Paragraphs(is, false, 300, .50f);
     }
 
     /**
@@ -300,10 +300,11 @@ public class ExtractHelper {
      * @param is    文档输入流
      * @param sortByPosition    pdfbox 文本抽取规则, true 表示按照特定顺序排列每页中的文本, 但需损耗一定性能, 而 false 表示不排序
      * @param threshold 文本段落字数阈值, 调整该阈值会影响文本片段拼接为文本段落的处理逻辑
+     * @param factor 段落字数影响因子, 段落最大字数 = threshold * (1 + factor), 浮点数 factor 取值范围 (0, 1.00)
      * @return  一个 pdf 文档中所有的文本段落集合
      * @throws Exception    文档抽取过程中可能会出现异常
      */
-    public static List<DocumentParagraph> pdfTextExtract2Paragraphs(InputStream is, boolean sortByPosition, int threshold) throws Exception {
+    public static List<DocumentParagraph> pdfTextExtract2Paragraphs(InputStream is, boolean sortByPosition, int threshold, float factor) throws Exception {
         List<DocumentParagraph> paragraphs = null;
         PDDocument document = null;
         Exception markEx = null;
@@ -354,7 +355,6 @@ public class ExtractHelper {
                                             tmp.append(segment);
                                             paragraphs.add(new DocumentParagraph(i + 1, p++, tmp.toString()));
                                             tmp = new StringBuilder();
-                                            // len = 0;
                                             joinFlag = 0;
                                             lastSegment = EMPTY_STRING;
                                         } else {
@@ -369,7 +369,7 @@ public class ExtractHelper {
                                                     full = new StringBuilder();
                                                     for (int i1 = paragraphs.size() - 1; i1 >= 0; i1--) {
                                                         DocumentParagraph p1 = paragraphs.get(i1);
-                                                        Integer pn = p1.getParagraph();
+                                                        Integer pn = p1.getPagination();
                                                         if (pn == i + 1) {
                                                             full.append(p1.getContent());
                                                         } else
@@ -570,7 +570,51 @@ public class ExtractHelper {
 
         if (markEx != null)
             throw markEx;
-
+        
+        if (paragraphs != null && !paragraphs.isEmpty()) {
+            List<DocumentParagraph> pList = new ArrayList<>(paragraphs.size() + paragraphs.size() >> 1);
+            int max = (int) (threshold * (1.0f + factor));
+            for (DocumentParagraph p : paragraphs) {
+                String c = p.getContent();
+                DocumentParagraph preP = null;
+                if (!pList.isEmpty())
+                    preP = pList.get(pList.size() - 1);
+                if (preP != null) {
+                    if (preP.getPagination().equals(p.getPagination())) {
+                        if (preP.getParagraph() >= p.getParagraph()) {
+                            p.setParagraph(preP.getParagraph() + 1);
+                        }
+                    }
+                }
+                if (c.length() > max) {
+                    int batch = c.length() % max == 0 ? c.length() / max : c.length() / max + 1;
+                    int page = p.getPagination();
+                    int paragraph = p.getParagraph();
+                    int begin = 0;
+                    int end = begin + max;
+                    String segment = c;
+                    for (int i = 0; i < batch; i++) {
+                        if (i == 0) {
+                            String pre = segment.substring(begin, end);
+                            segment = segment.substring(end);
+                            p.setContent(pre);
+                            paragraph++;
+                            pList.add(p);
+                        } else if (i == batch - 1) {
+                            pList.add(new DocumentParagraph(page, paragraph++, segment));
+                        } else {
+                            String pre = segment.substring(begin, end);
+                            segment = segment.substring(end);
+                            pList.add(new DocumentParagraph(page, paragraph++, pre));
+                        }
+                    }
+                } else {
+                    pList.add(p);
+                }
+            }
+            paragraphs = pList;
+        }
+        
         return paragraphs;
     }
 
