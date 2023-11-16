@@ -12,12 +12,20 @@ import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -32,14 +40,34 @@ public class ExtractHelper {
     }
 
     /**
-     * 语句的结束符, 暂时只考虑中文结束语
+     * 语句结束符：正则表达式
      */
-    private static final List<Character> SENTENCE_ENDPOINTS = Arrays.asList('。', '?', '？');
+    protected static final String ENDPOINT = "([。?？])";
+
+    /**
+     * 语句结束符正则表达式的模式对象
+     */
+    protected static final Pattern ENDPOINT_REGEX = Pattern.compile(ENDPOINT);
+
+    /**
+     * 语句的结束符字符数组, 暂时只考虑中文结束语
+     */
+    protected static final char[] SENTENCE_ENDPOINTS = new char[] { '。', '?', '？' };
 
     /**
      * 空字符串
      */
-    private static final String EMPTY_STRING = "";
+    protected static final String EMPTY_STRING = "";
+
+    /**
+     * 段落字数默认值
+     */
+    protected static final int DEFAULT_THRESHOLD = 400;
+
+    /**
+     * 段落字数最大值, max = DEFAULT_THRESHOLD * (1.0 + DEFAULT_FACTOR)
+     */
+    protected static final float DEFAULT_FACTOR = 3.0f;
     
     /**
      * 抽取 txt 文件的所有文本内容
@@ -99,10 +127,9 @@ public class ExtractHelper {
             paragraphs = new ArrayList<>();
             iir = new InputStreamReader(is);
             br = new BufferedReader(iir);
-            String line = null;
-            while ((line = br.readLine()) != null) {
-                paragraphs.add(new DocumentParagraph(1, p++, line));
-            }
+            // 全文拼接为一行, 按中文终止符拆分
+            String spliceStr = br.lines().filter(ContentHelper::hasText).collect(Collectors.joining(" "));
+            paragraphs = getDocumentParagraphs(spliceStr, " ", DEFAULT_THRESHOLD);
         } catch (Exception e) {
             mark = e;
         } finally {
@@ -112,7 +139,120 @@ public class ExtractHelper {
 
         if (mark != null)
             throw mark;
+        return getPrunedParagraphs(DEFAULT_THRESHOLD, DEFAULT_FACTOR, paragraphs);
+    }
 
+    /**
+     * 将文档全文字符串按照特定规则拆分合并为多个段落
+     * @param spliceStr 文档中所有文本内容拼接为一个完整的字符串
+     * @param splitRegex 字符串的拆分规则, 当无法根据 {@link #ENDPOINT} 拆分时就使用 splitRegex 去拆分文本
+     * @param threshold 段落字数阈值, 合并多个文本片段直到总字数超过该数量
+     * @return 拆分的所有段落
+     */
+    private static List<DocumentParagraph> getDocumentParagraphs(String spliceStr, String splitRegex, int threshold) {
+        String[] split = spliceStr.split(ENDPOINT);
+        if (split.length > 0) {
+            Matcher mat = ENDPOINT_REGEX.matcher(spliceStr);
+            int i = 0;
+            while (mat.find()) {
+                split[i] = split[i] + mat.group();
+                i++;
+            }
+            return mergeTextSegment2Paragraphs(threshold, split);
+        } else {
+            return mergeTextSegment2Paragraphs(threshold, spliceStr.split(splitRegex));
+        }
+    }
+
+    /**
+     * 将一篇文档中的所有文本片段合并为多个文本段落 <br/>
+     * 注意返回的段落集合默认每个段落对应页码为 1
+     * @param threshold 段落字数阈值, 合并多个文本片段直到总字数超过该数量
+     * @param pText 文档中的所有文本片段数组
+     * @return 文本段落集合
+     */
+    private static List<DocumentParagraph> mergeTextSegment2Paragraphs(int threshold, String[] pText) {
+        List<String> pList = Arrays.stream(pText).map(String::trim).filter(ContentHelper::hasText).collect(Collectors.toList());
+        StringBuilder tmp = null;
+        int p = 1;
+        List<DocumentParagraph> paragraphs = new ArrayList<>(pList.size() >> 1 + pList.size());
+        for (int i = 0; i < pList.size(); i++) {
+            String segment = pList.get(i);
+            if (segment.length() >= threshold) {
+                paragraphs.add(new DocumentParagraph(1, p++, segment));
+            } else {
+                int k = i + 1;
+                tmp = new StringBuilder(segment);
+                for (; k < pList.size() - 1; k++) {
+                    String str = pList.get(k);
+                    tmp.append(str);
+                    if (tmp.length() >= threshold) {
+                        paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
+                        break;
+                    }
+                }
+                if (k == pList.size() - 1) {
+                    tmp.append(pList.get(k));
+                    paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
+                }
+                i = k;
+                tmp = null;
+            }
+        }
+        return getPrunedParagraphs(threshold, DEFAULT_FACTOR, paragraphs);
+    }
+
+    /**
+     * 对抽取出的所有段落进行字数裁剪
+     * @param threshold 字数阈值
+     * @param factor 最大字数影响因子, max = threshold * (1 + factor)
+     * @param paragraphs 原段落
+     * @return 新的裁剪后的段落集合
+     */
+    public static List<DocumentParagraph> getPrunedParagraphs(int threshold, float factor, List<DocumentParagraph> paragraphs) {
+        if (paragraphs != null && !paragraphs.isEmpty()) {
+            List<DocumentParagraph> pList = new ArrayList<>(paragraphs.size() + paragraphs.size() >> 1);
+            int max = (int) (threshold * (1.0f + factor));
+            for (DocumentParagraph p : paragraphs) {
+                String c = p.getContent();
+                DocumentParagraph preP = null;
+                if (!pList.isEmpty())
+                    preP = pList.get(pList.size() - 1);
+                if (preP != null) {
+                    if (preP.getPagination().equals(p.getPagination())) {
+                        if (preP.getParagraph() >= p.getParagraph()) {
+                            p.setParagraph(preP.getParagraph() + 1);
+                        }
+                    }
+                }
+                if (c.length() > max) {
+                    int batch = c.length() % max == 0 ? c.length() / max : c.length() / max + 1;
+                    int page = p.getPagination();
+                    int paragraph = p.getParagraph();
+                    int begin = 0;
+                    int end = begin + max;
+                    String segment = c;
+                    for (int i = 0; i < batch; i++) {
+                        if (i == 0) {
+                            String pre = segment.substring(begin, end);
+                            segment = segment.substring(end);
+                            p.setContent(pre);
+                            paragraph++;
+                            pList.add(p);
+                        } else if (i == batch - 1) {
+                            pList.add(new DocumentParagraph(page, paragraph++, segment));
+                        } else {
+                            String pre = segment.substring(begin, end);
+                            segment = segment.substring(end);
+                            pList.add(new DocumentParagraph(page, paragraph++, pre));
+                        }
+                    }
+                } else {
+                    pList.add(p);
+                }
+            }
+            paragraphs = pList;
+        }
         return paragraphs;
     }
 
@@ -147,7 +287,7 @@ public class ExtractHelper {
      * @throws Exception 可能出现的异常
      */
     public static List<DocumentParagraph> wordDocTextExtract2Paragraphs(InputStream is) throws Exception {
-        return wordDocTextExtract2Paragraphs(is, 300);
+        return wordDocTextExtract2Paragraphs(is, DEFAULT_THRESHOLD);
     }
 
     /**
@@ -160,40 +300,9 @@ public class ExtractHelper {
      */
     public static List<DocumentParagraph> wordDocTextExtract2Paragraphs(InputStream is, int threshold) throws Exception {
         WordExtractor wordExtractor = new WordExtractor(is);
-        String[] pText = wordExtractor.getParagraphText();
-        return getWordDocumentParagraphs(threshold, pText);
-    }
-
-    private static List<DocumentParagraph> getWordDocumentParagraphs(int threshold, String[] pText) {
-        List<String> pList = Arrays.stream(pText).map(String::trim).filter(ContentHelper::hasText).collect(Collectors.toList());
-
-        StringBuilder tmp = null;
-        int p = 1;
-        List<DocumentParagraph> paragraphs = new ArrayList<>(pList.size() >> 1 + pList.size());
-        for (int i = 0; i < pList.size(); i++) {
-            String segment = pList.get(i);
-            if (segment.length() >= threshold) {
-                paragraphs.add(new DocumentParagraph(1, p++, segment));
-            } else {
-                int k = i + 1;
-                tmp = new StringBuilder(segment);
-                for (; k < pList.size() - 1; k++) {
-                    String str = pList.get(k);
-                    tmp.append(str);
-                    if (tmp.length() >= threshold) {
-                        paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
-                        break;
-                    }
-                }
-                if (k == pList.size() - 1) {
-                    tmp.append(pList.get(k));
-                    paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
-                }
-                i = k;
-                tmp = null;
-            }
-        }
-        return paragraphs;
+        String text = wordExtractor.getText();
+        text = text.replaceAll(ContentHelper.SYSTEM_NEW_LINE_SYMBOL, " ");
+        return getDocumentParagraphs(text, "[.;]", threshold);
     }
 
     /**
@@ -215,7 +324,7 @@ public class ExtractHelper {
      * @throws Exception    可能出现的异常
      */
     public static List<DocumentParagraph> wordDocxTextExtract2Paragraphs(InputStream is) throws Exception {
-        return wordDocxTextExtract2Paragraphs(is, 300);
+        return wordDocxTextExtract2Paragraphs(is, DEFAULT_THRESHOLD);
     }
 
     /**
@@ -229,8 +338,8 @@ public class ExtractHelper {
     public static List<DocumentParagraph> wordDocxTextExtract2Paragraphs(InputStream is, int threshold) throws Exception {
         XWPFWordExtractor xwpfWordExtractor = new XWPFWordExtractor(new XWPFDocument(is));
         String fullText = xwpfWordExtractor.getText();
-        String[] pText = fullText.split("\\n");
-        return getWordDocumentParagraphs(threshold, pText);
+        fullText = fullText.replaceAll("\\n", "");
+        return getDocumentParagraphs(fullText, "[.;]", threshold);
     }
 
     /**
@@ -285,13 +394,13 @@ public class ExtractHelper {
 
     /**
      * 抽取 pdf 每个页面中的所有文本片段, 尝试基于特定的规则将文本片段合并为多个文本段落, 返回所有的文本段落集合 <br/>
-     * 注: 默认段落字数阈值 300, 段落最大字数影响因子 0.5f
+     * 注: 默认段落字数阈值 {@link #DEFAULT_THRESHOLD}, 段落最大字数影响因子 {@link #DEFAULT_FACTOR}
      * @param is 文档输入流
      * @return 一个 pdf 文档中所有的文本段落集合
      * @throws Exception 文档抽取过程中可能会出现异常
      */
     public static List<DocumentParagraph> pdfTextExtract2Paragraphs(InputStream is) throws Exception {
-        return pdfTextExtract2Paragraphs(is, false, 300, .50f);
+        return pdfTextExtract2Paragraphs(is, false, DEFAULT_THRESHOLD, DEFAULT_FACTOR);
     }
 
     /**
@@ -392,13 +501,13 @@ public class ExtractHelper {
                                                 }
                                                 // 考虑 tmp 为空的情况
                                                 char curLast = segment.charAt(segment.length() - 1);
-                                                boolean curFlag = SENTENCE_ENDPOINTS.contains(curLast);
+                                                boolean curFlag = runEndpointMatch(curLast);
                                                 if (tmp.length() == 0) {
                                                     // 当前页面最后一段, 但是 tmp 是空的, 可能是字数原因新开了一个段落
                                                     DocumentParagraph lastParagraphObj = paragraphs.get(paragraphs.size() - 1);
                                                     String lastParagraph = lastParagraphObj.getContent();
                                                     char preLast = lastParagraph.charAt(lastParagraph.length() - 1);
-                                                    boolean preFlag = SENTENCE_ENDPOINTS.contains(preLast);
+                                                    boolean preFlag = runEndpointMatch(preLast);
                                                     if (!preFlag && !curFlag) {
                                                         // 上一段和当前段的结束都不是语句结束符, 合并当前段和上一段以及下一页的第一段
                                                         lastParagraphObj.setContent(lastParagraphObj.getContent() + segment);
@@ -417,7 +526,7 @@ public class ExtractHelper {
                                                     }
                                                 } else {
                                                     char preLast = tmp.charAt(tmp.length() - 1);
-                                                    boolean preFlag = SENTENCE_ENDPOINTS.contains(preLast);
+                                                    boolean preFlag = runEndpointMatch(preLast);
                                                     if (!preFlag && !curFlag) {
                                                         // 上一段和当前段的结束都不是语句结束符, 合并当前段和上一段以及下一页的第一段
                                                         tmp.append(segment);
@@ -571,51 +680,7 @@ public class ExtractHelper {
         if (markEx != null)
             throw markEx;
         
-        if (paragraphs != null && !paragraphs.isEmpty()) {
-            List<DocumentParagraph> pList = new ArrayList<>(paragraphs.size() + paragraphs.size() >> 1);
-            int max = (int) (threshold * (1.0f + factor));
-            for (DocumentParagraph p : paragraphs) {
-                String c = p.getContent();
-                DocumentParagraph preP = null;
-                if (!pList.isEmpty())
-                    preP = pList.get(pList.size() - 1);
-                if (preP != null) {
-                    if (preP.getPagination().equals(p.getPagination())) {
-                        if (preP.getParagraph() >= p.getParagraph()) {
-                            p.setParagraph(preP.getParagraph() + 1);
-                        }
-                    }
-                }
-                if (c.length() > max) {
-                    int batch = c.length() % max == 0 ? c.length() / max : c.length() / max + 1;
-                    int page = p.getPagination();
-                    int paragraph = p.getParagraph();
-                    int begin = 0;
-                    int end = begin + max;
-                    String segment = c;
-                    for (int i = 0; i < batch; i++) {
-                        if (i == 0) {
-                            String pre = segment.substring(begin, end);
-                            segment = segment.substring(end);
-                            p.setContent(pre);
-                            paragraph++;
-                            pList.add(p);
-                        } else if (i == batch - 1) {
-                            pList.add(new DocumentParagraph(page, paragraph++, segment));
-                        } else {
-                            String pre = segment.substring(begin, end);
-                            segment = segment.substring(end);
-                            pList.add(new DocumentParagraph(page, paragraph++, pre));
-                        }
-                    }
-                } else {
-                    pList.add(p);
-                }
-            }
-            paragraphs = pList;
-        }
-        
-        return paragraphs;
+        return getPrunedParagraphs(threshold, factor, paragraphs);
     }
 
     /**
@@ -626,11 +691,58 @@ public class ExtractHelper {
     private static int lastEndpoint(String text) {
         int idx = -1;
         for (int i = 0; i < text.length(); i++) {
-            if (SENTENCE_ENDPOINTS.contains(text.charAt(i))) {
+            if (runEndpointMatch(text.charAt(i))) {
                 idx = i;
             }
         }
         return idx;
+    }
+
+    private static boolean runEndpointMatch(char c) {
+        for (char s : SENTENCE_ENDPOINTS) {
+            if (s == c)
+                return true;
+        }
+        return false;
+    }
+
+    public static void main(String[] args) throws Exception {
+        InputStream is = null;
+        try {
+            // 输入文件
+            is = Files.newInputStream(Paths.get(""));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        List<DocumentParagraph> paragraphs = wordDocxTextExtract2Paragraphs(is);
+
+        // 输出文件
+        String target = "";
+        OutputStream os = null;
+        BufferedWriter bw = null;
+        try {
+            os = new FileOutputStream(target, true);
+            bw = new BufferedWriter(new OutputStreamWriter(os));
+            for (DocumentParagraph dp : paragraphs) {
+                String c = dp.getContent();
+                bw.write(String.format("第 %d 页 -> 第 %d 段 -> 字数: %d", dp.getPagination(), dp.getParagraph(), c.length()));
+                bw.newLine();
+                bw.write(c);
+                bw.newLine();
+                bw.newLine();
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bw != null)
+                    bw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
     
 }

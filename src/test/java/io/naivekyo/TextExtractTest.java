@@ -22,7 +22,13 @@ public class TextExtractTest {
     @Test
     public void pdfTextExtract2Paragraphs() throws Exception {
         InputStream is = readFile("");
-        export2TxtFile(ExtractHelper.pdfTextExtract2Paragraphs(is));
+        export2TxtFile(ExtractHelper.pdfTextExtract2Paragraphs(is), "");
+    }
+    
+    @Test
+    public void wordDOCExtract2Paragraphs() throws Exception {
+        InputStream is = readFile("");
+        export2TxtFile(ExtractHelper.pdfTextExtract2Paragraphs(is), "");
     }
 
     public static InputStream readFile(String path) {
@@ -34,12 +40,11 @@ public class TextExtractTest {
         return null;
     }
 
-    public static void export2TxtFile(List<DocumentParagraph> paragraphs) {
-        String target = "";
+    public static void export2TxtFile(List<DocumentParagraph> paragraphs, String path) {
         OutputStream os = null;
         BufferedWriter bw = null;
         try {
-            os = new FileOutputStream(target, true);
+            os = new FileOutputStream(path, true);
             bw = new BufferedWriter(new OutputStreamWriter(os));
             for (DocumentParagraph p : paragraphs) {
                 String c = p.getContent();
