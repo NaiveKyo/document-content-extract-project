@@ -92,8 +92,7 @@
             <artifactId>imageio-jpeg</artifactId>
             <version>3.9.4</version>
         </dependency>
-
-
+        
         <!--  JBIG2 library -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>

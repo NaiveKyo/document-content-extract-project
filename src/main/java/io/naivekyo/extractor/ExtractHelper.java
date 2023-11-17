@@ -194,6 +194,8 @@ public class ExtractHelper {
                 if (k == pList.size() - 1) {
                     tmp.append(pList.get(k));
                     paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
+                } else if (k == i + 1) {
+                    paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
                 }
                 i = k;
                 tmp = null;
