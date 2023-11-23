@@ -7,10 +7,32 @@
     <groupId>io.naivekyo</groupId>
     <artifactId>document-content-extract-project</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    
+    <organization>
+        <name>NaiveKyo</name>
+        <url>https://naivekyo.github.io</url>
+    </organization>
+    
+    <developers>
+        <developer>
+            <name>naivekyo</name>
+            <url>https://naivekyo.github.io</url>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+    
+    <description>
+        simple document content extract tools.
+    </description>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
     
     <dependencies>
@@ -52,18 +74,18 @@
         </dependency>
         
         <!-- handle word .doc suffix file -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-scratchpad</artifactId>
-            <version>4.1.2</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--    <groupId>org.apache.poi</groupId>-->
+        <!--    <artifactId>poi-scratchpad</artifactId>-->
+        <!--    <version>4.1.2</version>-->
+        <!--</dependency>-->
 
         <!-- handle word .docx suffix file -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
-            <version>4.1.2</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--    <groupId>org.apache.poi</groupId>-->
+        <!--    <artifactId>poi-ooxml</artifactId>-->
+        <!--    <version>4.1.2</version>-->
+        <!--</dependency>-->
 
         <!-- apache pdfbox -->
         <dependency>
@@ -108,6 +130,150 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- apache tika core: Contains the core interfaces and classes of Tika, but none of the parser implementations. -->
+        <!-- e.g. simply detecting document types -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>2.9.1</version>
+            <scope>compile</scope>
+        </dependency>
+        
+        <!-- apache tika parsers: parse documents -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>2.9.1</version>
+            <scope>compile</scope>
+        </dependency>
+        
     </dependencies>
+    
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <!--<filtering>true</filtering>-->
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.12.4</version>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            
+            <!--<plugin>-->
+            <!--    <groupId>org.apache.maven.plugins</groupId>-->
+            <!--    <artifactId>maven-jar-plugin</artifactId>-->
+            <!--    <version>2.4</version>-->
+            <!--    <configuration>-->
+            <!--        <archive>-->
+            <!--            <manifest>-->
+            <!--                <addClasspath>true</addClasspath>-->
+            <!--                <classpathPrefix>lib/</classpathPrefix>-->
+            <!--                &lt;!&ndash;<classpathLayoutType>repository</classpathLayoutType>&ndash;&gt;-->
+            <!--                <mainClass>io.naivekyo.Extractor</mainClass>-->
+            <!--            </manifest>-->
+            <!--            <manifestEntries>-->
+            <!--                <Class-Path>lib/</Class-Path>-->
+            <!--            </manifestEntries>-->
+            <!--        </archive>-->
+            <!--    </configuration>-->
+            <!--</plugin>-->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2-beta-5</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>
+                                        io.naivekyo.Extractor
+                                    </mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--<plugin>-->
+            <!--    <groupId>org.apache.maven.plugins</groupId>-->
+            <!--    <artifactId>maven-shade-plugin</artifactId>-->
+            <!--    <version>3.5.1</version>-->
+            <!--    <executions>-->
+            <!--        <execution>-->
+            <!--            <phase>package</phase>-->
+            <!--            <goals>-->
+            <!--                <goal>shade</goal>-->
+            <!--            </goals>-->
+            <!--            <configuration>-->
+            <!--                &lt;!&ndash;<minimizeJar>true</minimizeJar>&ndash;&gt;-->
+            <!--                &lt;!&ndash;<shadedArtifactAttached>true</shadedArtifactAttached>&ndash;&gt;-->
+            <!--                &lt;!&ndash;<shadedClassifierName>shaded</shadedClassifierName>&ndash;&gt;-->
+            <!--                &lt;!&ndash;<shadeSourcesContent>true</shadeSourcesContent>&ndash;&gt;-->
+            <!--                <transformers>-->
+            <!--                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
+            <!--                        <mainClass>io.naivekyo.Extractor</mainClass>-->
+            <!--                    </transformer>-->
+            <!--                </transformers>-->
+            <!--                <filters>-->
+            <!--                    <filter>-->
+            <!--                        <artifact>*:*</artifact>-->
+            <!--                        <excludes>-->
+            <!--                            <exclude>META-INF/*.SF</exclude>-->
+            <!--                            <exclude>META-INF/*.DSA</exclude>-->
+            <!--                            <exclude>META-INF/*.RSA</exclude>-->
+            <!--                        </excludes>-->
+            <!--                    </filter>-->
+            <!--                </filters>-->
+            <!--            </configuration>-->
+            <!--        </execution>-->
+            <!--    </executions>-->
+            <!--</plugin>-->
+            
+            <!--<plugin>-->
+            <!--    <groupId>org.apache.maven.plugins</groupId>-->
+            <!--    <artifactId>maven-dependency-plugin</artifactId>-->
+            <!--    <version>2.8</version>-->
+            <!--    <executions>-->
+            <!--        <execution>-->
+            <!--            <id>copy-dependencies</id>-->
+            <!--            <phase>package</phase>-->
+            <!--            <goals>-->
+            <!--                <goal>copy-dependencies</goal>-->
+            <!--            </goals>-->
+            <!--            <configuration>-->
+            <!--                <outputDirectory>${project.build.directory}/lib</outputDirectory>-->
+            <!--                <overWriteReleases>false</overWriteReleases>-->
+            <!--                <overWriteSnapshots>false</overWriteSnapshots>-->
+            <!--                <overWriteIfNewer>true</overWriteIfNewer>-->
+            <!--            </configuration>-->
+            <!--        </execution>-->
+            <!--    </executions>-->
+            <!--</plugin>-->
+        </plugins>
+    </build>
+    
     
 </project>

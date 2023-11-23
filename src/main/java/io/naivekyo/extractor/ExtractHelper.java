@@ -717,7 +717,9 @@ public class ExtractHelper {
             e.printStackTrace();
         }
 
-        List<DocumentParagraph> paragraphs = wordDocxTextExtract2Paragraphs(is);
+        List<DocumentParagraph> paragraphs = pdfTextExtract2Paragraphs(is);
+        if (paragraphs.size() == 0)
+            System.out.println("无文本内容");
 
         // 输出文件
         String target = "";

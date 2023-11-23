@@ -4,7 +4,7 @@ import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.impl.ImageContent;
 import io.naivekyo.content.impl.TextContent;
 import io.naivekyo.extractor.AbstractContentExtractor;
-import io.naivekyo.support.IOUtils;
+import io.naivekyo.util.IOUtils;
 import io.naivekyo.support.word.ImageType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

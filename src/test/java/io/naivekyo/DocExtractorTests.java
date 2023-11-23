@@ -3,7 +3,7 @@ package io.naivekyo;
 import io.naivekyo.content.DocContent;
 import io.naivekyo.extractor.ContentExtractor;
 import io.naivekyo.extractor.ExtractorFactory;
-import io.naivekyo.support.IOUtils;
+import io.naivekyo.util.IOUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * @author NaiveKyo
  * @since 1.0
  */
-public class DocExtractorTest {
+public class DocExtractorTests {
 
     public static final String FILE_PATH = "";
     

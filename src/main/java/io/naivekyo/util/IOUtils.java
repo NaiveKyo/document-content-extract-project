@@ -1,4 +1,4 @@
-package io.naivekyo.support;
+package io.naivekyo.util;
 
 import org.apache.poi.hemf.usermodel.HemfPicture;
 import org.apache.poi.hwmf.usermodel.HwmfPicture;
@@ -11,6 +11,7 @@ import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,13 +19,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * io fundamental facilities class
+ *
  * @author NaiveKyo
  * @since 1.0
  */
@@ -36,7 +40,8 @@ public class IOUtils {
 
     /**
      * write contents to txt file line by line.
-     * @param file target output file, must exist
+     *
+     * @param file  target output file, must exist
      * @param lines all lines
      */
     public static void writeToTxtFile(File file, List<String> lines) {
@@ -46,8 +51,8 @@ public class IOUtils {
         FileOutputStream fos = null;
         BufferedWriter bw = null;
         try {
-           fos = new FileOutputStream(file);
-           bw = new BufferedWriter(new OutputStreamWriter(fos));
+            fos = new FileOutputStream(file);
+            bw = new BufferedWriter(new OutputStreamWriter(fos));
             for (String line : lines) {
                 bw.write(line);
                 bw.newLine();
@@ -69,7 +74,39 @@ public class IOUtils {
     }
 
     /**
+     * read txt file content line by line, and close stream before end of method.
+     * @param is 文件输入流
+     * @return 所有行
+     */
+    public static List<String> readTxtFile(InputStream is) {
+        Exception bak = null;
+        BufferedReader br = null;
+        List<String> rows = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(is));
+            rows = new ArrayList<>();
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                rows.add(line);
+            }
+        } catch (IOException e) {
+            bak = e;
+        } finally {
+            try {
+                if (br != null)
+                    br.close();
+            } catch (IOException e) {
+                bak = e;
+            }
+        }
+        if (bak != null)
+            throw new RuntimeException(bak);
+        return rows;
+    }
+
+    /**
      * save file to disk.
+     *
      * @param data image bytes
      * @param path save path (specific-directory/your-img-name.type)
      */
@@ -99,6 +136,7 @@ public class IOUtils {
 
     /**
      * write bytes to input stream.
+     *
      * @param data bytes
      * @return input stream
      */
@@ -108,8 +146,9 @@ public class IOUtils {
 
     /**
      * 将图片持久化到指定的目录
+     *
      * @param image {@link BufferedImage}
-     * @param type 图片类型, png、jpeg
+     * @param type  图片类型, png、jpeg
      * @param file  目标文件
      * @return 成功或失败
      * @throws IOException 异常
@@ -120,8 +159,9 @@ public class IOUtils {
 
     /**
      * 从输入流中提取所有字节
+     *
      * @param is 输入流
-     * @return  存储所有字节的数组
+     * @return 存储所有字节的数组
      * @throws IOException IO 异常
      */
     public static byte[] toByteArray(InputStream is) throws IOException {
@@ -130,9 +170,10 @@ public class IOUtils {
 
     /**
      * 使用缓冲数组从输入流中提取所有字节
-     * @param is 输入流
+     *
+     * @param is         输入流
      * @param bufferSize 缓存数组大小
-     * @return  存储所有字节的数组
+     * @return 存储所有字节的数组
      * @throws IOException IO 异常
      */
     public static byte[] toByteArray(InputStream is, int bufferSize) throws IOException {
@@ -147,6 +188,7 @@ public class IOUtils {
 
     /**
      * 将 wmf 文件转换为 png 文件
+     *
      * @param data Windows Meta File
      * @return file bytes
      * @throws IOException IOException
@@ -182,6 +224,7 @@ public class IOUtils {
 
     /**
      * 将 mef 文件转换为 png 文件
+     *
      * @param data Extended windows meta file
      * @return file bytes
      * @throws IOException IOException
@@ -215,7 +258,7 @@ public class IOUtils {
 
         return os.toByteArray();
     }
-    
+
     public static byte[] readDataFromNetworkSource(String url, String referer) {
         URL networkURL = null;
         URLConnection conn = null;
@@ -250,5 +293,5 @@ public class IOUtils {
             throw new RuntimeException(ex);
         return baos.toByteArray();
     }
-    
+
 }
