@@ -136,7 +136,12 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>2.9.1</version>
-            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
         <!-- apache tika parsers: parse documents -->
@@ -145,6 +150,84 @@
             <artifactId>tika-parsers-standard-package</artifactId>
             <version>2.9.1</version>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>tika-parser-apple-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-audiovideo-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-cad-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-code-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-crypto-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-digest-commons</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-html-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-mail-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-news-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-ocr-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-pkg-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-webarchive-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-xml-module</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>tika-parser-xmp-commons</artifactId>
+                    <groupId>org.apache.tika</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>vorbis-java-core</artifactId>
+                    <groupId>org.gagravarr</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>vorbis-java-tika</artifactId>
+                    <groupId>org.gagravarr</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>bcprov-jdk18on</artifactId>
+                    <groupId>org.bouncycastle</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>log4j-api</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>slf4j-api</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
     </dependencies>
@@ -194,7 +277,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2-beta-5</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -204,9 +287,9 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>
-                                        io.naivekyo.Extractor
-                                    </mainClass>
+                                    <addClasspath>true</addClasspath>
+                                    <mainClass>io.naivekyo.Extractor</mainClass>
+                                    <classpathPrefix>lib/</classpathPrefix>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
@@ -217,61 +300,26 @@
                 </executions>
             </plugin>
 
-            <!--<plugin>-->
-            <!--    <groupId>org.apache.maven.plugins</groupId>-->
-            <!--    <artifactId>maven-shade-plugin</artifactId>-->
-            <!--    <version>3.5.1</version>-->
-            <!--    <executions>-->
-            <!--        <execution>-->
-            <!--            <phase>package</phase>-->
-            <!--            <goals>-->
-            <!--                <goal>shade</goal>-->
-            <!--            </goals>-->
-            <!--            <configuration>-->
-            <!--                &lt;!&ndash;<minimizeJar>true</minimizeJar>&ndash;&gt;-->
-            <!--                &lt;!&ndash;<shadedArtifactAttached>true</shadedArtifactAttached>&ndash;&gt;-->
-            <!--                &lt;!&ndash;<shadedClassifierName>shaded</shadedClassifierName>&ndash;&gt;-->
-            <!--                &lt;!&ndash;<shadeSourcesContent>true</shadeSourcesContent>&ndash;&gt;-->
-            <!--                <transformers>-->
-            <!--                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
-            <!--                        <mainClass>io.naivekyo.Extractor</mainClass>-->
-            <!--                    </transformer>-->
-            <!--                </transformers>-->
-            <!--                <filters>-->
-            <!--                    <filter>-->
-            <!--                        <artifact>*:*</artifact>-->
-            <!--                        <excludes>-->
-            <!--                            <exclude>META-INF/*.SF</exclude>-->
-            <!--                            <exclude>META-INF/*.DSA</exclude>-->
-            <!--                            <exclude>META-INF/*.RSA</exclude>-->
-            <!--                        </excludes>-->
-            <!--                    </filter>-->
-            <!--                </filters>-->
-            <!--            </configuration>-->
-            <!--        </execution>-->
-            <!--    </executions>-->
-            <!--</plugin>-->
-            
-            <!--<plugin>-->
-            <!--    <groupId>org.apache.maven.plugins</groupId>-->
-            <!--    <artifactId>maven-dependency-plugin</artifactId>-->
-            <!--    <version>2.8</version>-->
-            <!--    <executions>-->
-            <!--        <execution>-->
-            <!--            <id>copy-dependencies</id>-->
-            <!--            <phase>package</phase>-->
-            <!--            <goals>-->
-            <!--                <goal>copy-dependencies</goal>-->
-            <!--            </goals>-->
-            <!--            <configuration>-->
-            <!--                <outputDirectory>${project.build.directory}/lib</outputDirectory>-->
-            <!--                <overWriteReleases>false</overWriteReleases>-->
-            <!--                <overWriteSnapshots>false</overWriteSnapshots>-->
-            <!--                <overWriteIfNewer>true</overWriteIfNewer>-->
-            <!--            </configuration>-->
-            <!--        </execution>-->
-            <!--    </executions>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
     
