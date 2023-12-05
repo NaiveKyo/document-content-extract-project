@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 文档文本内容分割器实现 (全文分割为多个 sentence, 多个 sentence 合并为一个 chunk)
+ * 文档文本内容分割器实现 (全文分割为多个 sentence, 多个 sentence 合并为一个 chunk) <br/>
+ * thread-safe
  */
 @Slf4j
 public class DocumentTextSplitter {
@@ -58,6 +59,10 @@ public class DocumentTextSplitter {
         this(DEFAULT_CHUNK_LENGTH, DEFAULT_OVERLAP_LENGTH);
     }
 
+    /**
+     * 使用指定语言对应的分割字符集, sentence chunk 长度 = 500, chunk overlap 长度 = 50
+     * @param language 指定语言
+     */
     public DocumentTextSplitter(LanguageEnum language) {
         this(language, DEFAULT_CHUNK_LENGTH, DEFAULT_OVERLAP_LENGTH);
     }
@@ -220,10 +225,14 @@ public class DocumentTextSplitter {
                         mergeResult.add(sentence);
                     // 处理 overlap 部分, 不断移除 segmentCollector 的第一个元素, 直到剩下的元素长度小于 overlap length
                     // 剩下的元素作为下个 chunk 的开头, 从而实现两个 chunk 之间具有重叠部分
-                    while (total > chunkOverlap && segmentCollector.size() > 1) {
-                        Segment head = segmentCollector.get(0);
-                        total -= head.getSegment().length() + head.getDelimiter().length();
-                        segmentCollector.pop();
+                    if (chunkOverlap == 0) {
+                        segmentCollector.clear();
+                    } else {
+                        while (total > chunkOverlap && segmentCollector.size() > 1) {
+                            Segment head = segmentCollector.get(0);
+                            total -= head.getSegment().length() + head.getDelimiter().length();
+                            segmentCollector.pop();
+                        }
                     }
                 }
             }
