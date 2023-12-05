@@ -13,9 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -103,6 +105,31 @@ public class DocumentTextSplitter {
     }
 
     /**
+     * 分割片段类
+     */
+    static class Segment {
+        private final String delimiter;
+        private final String segment;
+
+        public Segment(String delimiter, String segment) {
+            this.delimiter = delimiter;
+            this.segment = segment;
+        }
+        
+        public static Segment of(String delimiter, String segment) {
+            return new Segment(delimiter, segment);
+        }
+
+        public String getDelimiter() {
+            return delimiter;
+        }
+
+        public String getSegment() {
+            return segment;
+        }
+    }
+
+    /**
      * 对目标文本做切分工作
      * @param text 全文内容
      * @return 切分后的 chunk 集合
@@ -124,114 +151,121 @@ public class DocumentTextSplitter {
             sep = "";
         }
         
-        String[] splits = text.split(sep);
-        
+        // 使用 separator 对目标字符串进行分割
+        List<Segment> segments = new ArrayList<>();
+        if (!"".equals(sep)) {
+            Pattern pat = Pattern.compile("(" + Matcher.quoteReplacement(sep) + ")");
+            String[] splits = pat.split(text);
+            Matcher mat = pat.matcher(text);
+            if (splits.length != 0) {
+                int i = 0;
+                while (mat.find()) {
+                    if (splits[i].length() != 0)
+                        segments.add(new Segment(mat.group(), splits[i]));
+                    i++;
+                }
+                if (i == splits.length - 1)
+                    segments.add(new Segment("", splits[i]));
+            } else {
+                log.warn("separator: {}, regex: ({}), regex can't use separator to split origin text", sep, sep);
+                segments = Arrays.stream(text.split(sep)).map(s -> Segment.of("", s)).collect(Collectors.toList());
+            }
+        } else
+            segments = Arrays.stream(text.split(sep)).map(s -> Segment.of("", s)).collect(Collectors.toList());
+
         // 收集长度小于 chunkLen 的字符串集合
-        List<String> tmpSegments = new ArrayList<>();
+        List<Segment> tmpSegments = new ArrayList<>();
         // 遍历所有串, 将长度小于 chunkLen 的子串收集起来, 长度大于 chunkLen 的子串进行递归拆分处理
-        for (String s : splits) {
+        for (Segment segment : segments) {
+            String s = segment.segment;
             if (s.length() < chunkLen)
-                tmpSegments.add(s);
+                tmpSegments.add(segment);
             else {
                 if (!tmpSegments.isEmpty()) {
-                    // TODO merge
-                    List<String> merge = merge(tmpSegments, sep);
+                    // merge
+                    List<String> merge = merge(tmpSegments);
                     chunks.addAll(merge);
                     tmpSegments.clear();
                 }
-                // 递归处理较长的子串
+                // 使用其他合适的分割符递归处理较长的子串
                 List<String> recursive = split(s);
                 chunks.addAll(recursive);
             }
         }
         
         if (!tmpSegments.isEmpty()) {
-            List<String> merge = merge(tmpSegments, sep);
+            List<String> merge = merge(tmpSegments);
             chunks.addAll(merge);
         }
         
         return chunks;
     }
     
-    private List<String> merge(List<String> segments, String separator) {
-        int sepLen = separator.length();
+    private List<String> merge(List<Segment> segments) {
         // 最终合并结果, 注意相邻的两个 sentence 之间可能具有重叠部分
         List<String> mergeResult = new ArrayList<>();
-        // 
-        List<String> currentSegment = new ArrayList<>();
-        // 
+        // 将多个 segment 合并为一个 sentence
+        LinkedList<Segment> segmentCollector = new LinkedList<>();
+        // 当前 sentence 的字符长度
         int total = 0;
         
-        for (String segment : segments) {
-            int len = segment.length();
-            int tmp = total + len + (sepLen > 0 && !currentSegment.isEmpty() ? sepLen : 0);
-            if (tmp > chunkLen) {
-                if (total > chunkLen)
-                    log.warn("created a chunk of size {}, which is longer than the specified: {}", total, chunkLen);
-                if (!currentSegment.isEmpty()) {
-                    // join: currentSegment 中所有字符通过分割符合并为一个完整的 sentence
-                    String sentence = join(currentSegment, separator);
+        for (Segment segment : segments) {
+            // 当前 segment + separator 后的长度
+            int len = segment.getSegment().length() + segment.getDelimiter().length();
+            if (total + len > chunkLen) {
+                if (!segmentCollector.isEmpty()) {
+                    // join: segmentCollector 中所有字符合并为一个完整的 sentence
+                    String sentence = join(segmentCollector);
                     if (sentence != null)
                         mergeResult.add(sentence);
-                    // 处理 overlap 部分, 不断移除 currentSegment 的第一个元素, 直到剩下的元素长度小于 overlap length
+                    // 处理 overlap 部分, 不断移除 segmentCollector 的第一个元素, 直到剩下的元素长度小于 overlap length
                     // 剩下的元素作为下个 chunk 的开头, 从而实现两个 chunk 之间具有重叠部分
-                    while (total > chunkOverlap || (total > 0 && total + len + (sepLen > 0 && !currentSegment.isEmpty() ? sepLen : 0) > chunkLen)) {
-                        total -= currentSegment.get(0).length() + (sepLen > 0 && currentSegment.size() > 1 ? sepLen : 0);
-                        currentSegment.remove(0);
+                    while (total > chunkOverlap && segmentCollector.size() > 1) {
+                        Segment head = segmentCollector.get(0);
+                        total -= head.getSegment().length() + head.getDelimiter().length();
+                        segmentCollector.pop();
                     }
                 }
             }
-            currentSegment.add(segment);
-            total += len + (sepLen > 0 && currentSegment.size() > 1 ? sepLen : 0);
+            segmentCollector.add(segment);
+            total += len;
         }
 
-        String sentence = join(currentSegment, separator);
+        String sentence = join(segmentCollector);
         if (sentence != null)
             mergeResult.add(sentence);
         
         return mergeResult;
     }
     
-    private String join(List<String> segments, String separator) {
+    private String join(List<Segment> segments) {
         if (segments.isEmpty())
             return null;
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < segments.size(); i++) {
-            sb.append(segments.get(i));
-            if (i < segments.size() - 1)
-                sb.append(separator);
+        for (Segment segment : segments) {
+            sb.append(segment.getSegment()).append(segment.getDelimiter());
         }
         return sb.toString();
     }
 
+    /**
+     * Unit Tests 
+     */
     public static void main(String[] args) throws Exception {
         DocumentTextSplitter splitter = new DocumentTextSplitter(LanguageEnum.ZH_CN);
         
-        String file = "C:\\Users\\DELL\\Desktop\\云盘抽取结果\\pdf-纯文本-c61e76e0dc138bd809a943833ce92776.json";
+        String file = "";
         InputStream is = Files.newInputStream(Paths.get(file));
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         String json = br.lines().collect(Collectors.joining());
         JSONObject entries = JSONUtil.parseObj(json);
-        JSONArray pagination = entries.getJSONArray("content"); // 所有页
+        JSONArray pagination = entries.getJSONArray("content");
         JSONObject first = pagination.getJSONObject(0);
         String content = first.getStr("content", "");
-        // 这里做处理
         String regex = "[\n\r]|\\s";
         content = content.trim().replaceAll(regex, "");
         
         List<String> split = splitter.split(content);
-        
-        // 构造正则表达式
-        // String[] set = LanguageEndpoints.getLanguageSet(LanguageEnum.ZH_CN);
-        // StringBuilder sb = new StringBuilder();
-        // sb.append("[");
-        // for (String value : set) {
-        //     sb.append(Matcher.quoteReplacement(value));
-        // }
-        // sb.append("]");
-        // String regex = sb.toString();
-        // String regex = "[\n\r]";
-        // split = split.stream().map(s -> s.trim().replaceAll(regex, "")).collect(Collectors.toList());
 
         for (String s : split) {
             System.out.println(s);
