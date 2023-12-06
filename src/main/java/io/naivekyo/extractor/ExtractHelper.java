@@ -2,7 +2,8 @@ package io.naivekyo.extractor;
 
 import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.DocumentParagraph;
-import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -363,7 +364,11 @@ public class ExtractHelper {
      */
     public static List<String> pdfTextExtract(InputStream is, boolean sortByPosition) throws IOException {
         List<String> pageTexts = null;
-        try (PDDocument document = PDDocument.load(is, MemoryUsageSetting.setupTempFileOnly())) {
+        PDDocument document = null;
+        Exception bak = null;
+        try {
+            byte[] bytes = IOUtils.toByteArray(is);
+            document = Loader.loadPDF(bytes, "", null, null, IOUtils.createTempFileOnlyStreamCache());
             AccessPermission ap = document.getCurrentAccessPermission();
             if (!ap.canExtractContent()) {
                 throw new IOException("You do not have permission to extract text");
@@ -387,10 +392,23 @@ public class ExtractHelper {
                     pageTexts.add(text);
                 }
             }
+        } catch (Exception e) {
+            bak = e;
+        } finally {
+            try {
+                if (is != null)
+                    is.close();
+            } catch (IOException e) {
+                bak = e;
+            }
         }
+        
+        if (bak != null)
+            throw new IOException(bak);
         
         if (pageTexts.isEmpty())
             return null;
+        
         return pageTexts;
     }
 
@@ -420,7 +438,8 @@ public class ExtractHelper {
         PDDocument document = null;
         Exception markEx = null;
         try {
-            document = PDDocument.load(is, MemoryUsageSetting.setupTempFileOnly());
+            byte[] bytes = IOUtils.toByteArray(is);
+            document = Loader.loadPDF(bytes, "", null, null, IOUtils.createTempFileOnlyStreamCache());
             AccessPermission ap = document.getCurrentAccessPermission();
             if (!ap.canExtractContent()) {
                 throw new IOException("You do not have permission to extract text");
@@ -709,10 +728,12 @@ public class ExtractHelper {
     }
 
     public static void main(String[] args) throws Exception {
+        String inPath = "C:\\Users\\DELL\\Desktop\\JavaScript高级程序设计（第4版.pdf";
+        String outPath = "D:\\code_repositories\\github-repository\\document-content-extract-project\\src\\test\\java\\io\\naivekyo\\output\\output.txt";
         InputStream is = null;
         try {
             // 输入文件
-            is = Files.newInputStream(Paths.get(""));
+            is = Files.newInputStream(Paths.get(inPath));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -722,11 +743,10 @@ public class ExtractHelper {
             System.out.println("无文本内容");
 
         // 输出文件
-        String target = "";
         OutputStream os = null;
         BufferedWriter bw = null;
         try {
-            os = new FileOutputStream(target, true);
+            os = new FileOutputStream(outPath, true);
             bw = new BufferedWriter(new OutputStreamWriter(os));
             for (DocumentParagraph dp : paragraphs) {
                 String c = dp.getContent();
