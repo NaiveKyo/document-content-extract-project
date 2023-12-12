@@ -213,7 +213,6 @@ public class DocumentTextSplitter {
         LinkedList<Segment> segmentCollector = new LinkedList<>();
         // 当前 sentence 的字符长度
         int total = 0;
-        
         for (Segment segment : segments) {
             // 当前 segment + separator 后的长度
             int len = segment.getSegment().length() + segment.getDelimiter().length();
@@ -227,6 +226,7 @@ public class DocumentTextSplitter {
                     // 剩下的元素作为下个 chunk 的开头, 从而实现两个 chunk 之间具有重叠部分
                     if (chunkOverlap == 0) {
                         segmentCollector.clear();
+                        total = 0;
                     } else {
                         while (total > chunkOverlap && segmentCollector.size() > 1) {
                             Segment head = segmentCollector.get(0);
@@ -261,24 +261,25 @@ public class DocumentTextSplitter {
      * Unit Tests 
      */
     public static void main(String[] args) throws Exception {
-        DocumentTextSplitter splitter = new DocumentTextSplitter(LanguageEnum.ZH_CN);
+        DocumentTextSplitter splitter = new DocumentTextSplitter(LanguageEnum.ZH_CN, 500, 0);
         
         String file = "";
         InputStream is = Files.newInputStream(Paths.get(file));
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         String json = br.lines().collect(Collectors.joining());
+        br.close();
         JSONObject entries = JSONUtil.parseObj(json);
         JSONArray pagination = entries.getJSONArray("content");
         JSONObject first = pagination.getJSONObject(0);
         String content = first.getStr("content", "");
         String regex = "[\n\r]|\\s";
         content = content.trim().replaceAll(regex, "");
-        
         List<String> split = splitter.split(content);
 
         for (String s : split) {
             System.out.println(s);
         }
+        
     }
     
 }

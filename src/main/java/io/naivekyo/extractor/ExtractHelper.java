@@ -728,8 +728,8 @@ public class ExtractHelper {
     }
 
     public static void main(String[] args) throws Exception {
-        String inPath = "C:\\Users\\DELL\\Desktop\\JavaScript高级程序设计（第4版.pdf";
-        String outPath = "D:\\code_repositories\\github-repository\\document-content-extract-project\\src\\test\\java\\io\\naivekyo\\output\\output.txt";
+        String inPath = "";
+        String outPath = "";
         InputStream is = null;
         try {
             // 输入文件
