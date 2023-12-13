@@ -26,13 +26,13 @@ public class LanguageEndpoints {
 
     private static void loadCNEndpoint() {
         ENDPOINT_MAP.put(LanguageEnum.ZH_CN.getLang(), new String[]{
-                "\n\n", "\n", System.getProperty("line.separator"), "。", "……", "？", "?", ".", " "
+                "\n\n", "\n", System.getProperty("line.separator"), "。", "……", "？", "\\?", "\\.", " "
         });
     }
     
     private static void loadENEndpoint() {
         ENDPOINT_MAP.put(LanguageEnum.EN.getLang(), new String[]{
-                "\n\n", "\n", System.getProperty("line.separator"), ".", "……", "?", " "
+                "\n\n", "\n", System.getProperty("line.separator"), "\\.", "……", "\\?", " "
         });
     }
 
