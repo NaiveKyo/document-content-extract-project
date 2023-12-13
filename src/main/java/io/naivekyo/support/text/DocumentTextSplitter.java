@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -151,8 +150,7 @@ public class DocumentTextSplitter {
         }
         if (sep == null) {
             // 没有找到适合的分割符, 就按照字符进行分割, 最后按字数合并
-            log.warn("language: {}, separator set: {}: there is no suitable separator. Use the default strategy, split by word count", 
-                    this.lang, Arrays.toString(LanguageEndpoints.getLanguageSet(LanguageEnum.valueOf(this.lang.toUpperCase(Locale.ROOT)))));
+            log.warn("language: {}, there is no suitable separator. Use the default strategy, split by word count", this.lang);
             sep = "";
         }
         
