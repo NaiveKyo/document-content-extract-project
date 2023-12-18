@@ -134,6 +134,15 @@ public class DocumentTextSplitter {
     }
 
     /**
+     * 清洗目标字符串中可能包含的多余杂质
+     * @param text 源字符串
+     * @return 新的字符串
+     */
+    public static String cleanText(String text) {
+        return text.replace((char) 12288, ' ').replaceAll("[\n\r]|\\s", "").trim();
+    }
+    
+    /**
      * 对目标文本做切分工作
      * @param text 全文内容
      * @return 切分后的 chunk 集合
@@ -266,12 +275,15 @@ public class DocumentTextSplitter {
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         String json = br.lines().collect(Collectors.joining());
         br.close();
+        // txt
+        // String content = cleanText(json);
+        
+        // json
         JSONObject entries = JSONUtil.parseObj(json);
         JSONArray pagination = entries.getJSONArray("content");
         JSONObject first = pagination.getJSONObject(0);
         String content = first.getStr("content", "");
-        String regex = "[\n\r]|\\s";
-        content = content.trim().replaceAll(regex, "");
+        content = cleanText(content);
         List<String> split = splitter.split(content);
 
         for (String s : split) {
