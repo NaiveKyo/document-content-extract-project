@@ -139,6 +139,7 @@ public class DocumentTextSplitter {
      * @return 新的字符串
      */
     public static String cleanText(String text) {
+        // 去除全角空格
         return text.replace((char) 12288, ' ').replaceAll("[\n\r]|\\s", "").trim();
     }
     
