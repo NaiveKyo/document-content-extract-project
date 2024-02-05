@@ -76,7 +76,7 @@ public class XSLFPPTContentExtractor extends AbstractContentExtractor {
             
             // 获取所有 media 数据(图片/视频/音频), 目前只处理图片 TODO
             List<XSLFPictureData> mediaDataList = xmls.getPictureData();
-            mediaNameMap = new HashMap<>((int) (mediaDataList.size() / .45f + 1f));
+            mediaNameMap = new HashMap<>((int) (mediaDataList.size() / .75f + 1f));
             
             // 处理幻灯片母版, 抽取图片数据
             List<XSLFSlideMaster> slideMasters = xmls.getSlideMasters();
