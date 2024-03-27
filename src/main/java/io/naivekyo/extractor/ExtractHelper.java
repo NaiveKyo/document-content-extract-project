@@ -184,22 +184,24 @@ public class ExtractHelper {
             } else {
                 int k = i + 1;
                 tmp = new StringBuilder(segment);
+                boolean merge = false;
                 for (; k < pList.size() - 1; k++) {
                     String str = pList.get(k);
                     tmp.append(str);
                     if (tmp.length() >= threshold) {
                         paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
+                        merge = true;
                         break;
                     }
                 }
-                if (k == pList.size() - 1) {
-                    tmp.append(pList.get(k));
-                    paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
-                } else if (k == i + 1) {
-                    paragraphs.add(new DocumentParagraph(1, p++, tmp.toString()));
+                if (merge) {
+                    i = k;
+                } else {
+                    if (k == pList.size()) {
+                        paragraphs.add(new DocumentParagraph(1, p, tmp.toString()));
+                        break;
+                    }
                 }
-                i = k;
-                tmp = null;
             }
         }
         return getPrunedParagraphs(threshold, DEFAULT_FACTOR, paragraphs);
