@@ -2,6 +2,7 @@ package io.naivekyo.extractor;
 
 import io.naivekyo.content.ContentHelper;
 import io.naivekyo.content.DocumentParagraph;
+import io.naivekyo.exception.ContentExtractFailureException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -11,7 +12,11 @@ import org.apache.poi.hwpf.extractor.WordExtractor;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.tika.detect.EncodingDetector;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.txt.UniversalEncodingDetector;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -20,6 +25,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -69,36 +76,55 @@ public class ExtractHelper {
      * 段落字数最大值, max = DEFAULT_THRESHOLD * (1.0 + DEFAULT_FACTOR)
      */
     protected static final float DEFAULT_FACTOR = 3.0f;
-    
+
     /**
-     * 抽取 txt 文件的所有文本内容
-     * @param is    文档输入流
+     * 抽取 txt 文件的所有文本内容, 会先尝试获取文件的编码, 如果无法获取就是用默认的 {@link StandardCharsets#UTF_8} 进行处理 <br/>
+     * @param is    文档输入流, 要求支持 {@link InputStream#markSupported() mark feature}, 如果不支持就包装为 {@link BufferedInputStream}
      * @return 所有文本内容拼接成的字符串
-     * @throws Exception stream 将 IOException 包装为 {@link java.io.UncheckedIOException}
+     * @throws ContentExtractFailureException 内容抽取异常
      */
-    public static String txtFileTextExtract(InputStream is) throws Exception {
+    public static String txtFileTextExtract(InputStream is) throws IOException {
         return txtFileTextExtract(is, "");
     }
 
     /**
-     * 抽取 txt 文件的所有文本内容
-     * @param is    文档输入流
-     * @param join  拼接文本使用的连接符
+     * 抽取 txt 文件的所有文本内容, 会先尝试获取文件的编码, 如果无法获取就是用默认的 {@link StandardCharsets#UTF_8} 进行处理 <br/>
+     * @param is    文档输入流, 要求支持 {@link InputStream#markSupported() mark feature}, 如果不支持就包装为 {@link BufferedInputStream}
+     * @param join  txt 文件是按行抽取的, 该参数用于拼接所有的行
      * @return 所有文本内容拼接成的字符串
-     * @throws Exception stream 将 IOException 包装为 {@link java.io.UncheckedIOException}
+     * @throws ContentExtractFailureException 内容抽取异常
      */
-    public static String txtFileTextExtract(InputStream is, String join) throws Exception {
+    public static String txtFileTextExtract(InputStream is, String join) throws IOException {
+        if (!is.markSupported()) {
+            is = new BufferedInputStream(is);
+        }
+        EncodingDetector encodingDetector = new UniversalEncodingDetector();
+        Charset charset = encodingDetector.detect(is, new Metadata());
+        if (charset == null)
+            charset = StandardCharsets.UTF_8;
+        return txtFileTextExtract(is, charset, join);
+    }
+
+    /**
+     * 抽取 txt 文件的所有文本内容, 使用对应的编码进行处理
+     * @param is    文档输入流
+     * @param join  txt 文件是按行抽取的, 该参数用于拼接所有的行
+     * @param charset 文件编码
+     * @return 所有文本内容拼接成的字符串
+     * @throws ContentExtractFailureException 内容抽取异常
+     */
+    public static String txtFileTextExtract(InputStream is, Charset charset, String join) throws IOException {
         InputStreamReader iir = null;
         BufferedReader br = null;
 
-        Exception mark = null;
+        ContentExtractFailureException mark = null;
         String textContent = "";
         try {
-            iir = new InputStreamReader(is);
+            iir = new InputStreamReader(is, charset);
             br = new BufferedReader(iir);
             textContent = br.lines().collect(Collectors.joining(join));
-        } catch (Exception e) { // handle UncheckedIOException
-            mark = e;
+        } catch (Exception e) {
+            mark = new ContentExtractFailureException(e.getMessage(), e);
         } finally {
             if (br != null)
                 br.close();
@@ -113,34 +139,20 @@ public class ExtractHelper {
     /**
      * 按行抽取 txt 所有文本封装为段落集合 <br/>
      * 注意: txt 文件中没有页的概念, 默认只有一页
-     * @param is 文档输入流
-     * @return 所有段落集合
-     * @throws Exception 可能出现的异常 
+     * @param is        文件输入流
+     * @return 抽取到的所有段落集合
+     * @throws IOException 抽取过程中可能会抛出异常
+     * @throws ContentExtractFailureException 内容抽取异常
      */
-    public static List<DocumentParagraph> txtFileTextExtract2Paragraphs(InputStream is) throws Exception {
-        InputStreamReader iir = null;
-        BufferedReader br = null;
-
-        Exception mark = null;
+    public static List<DocumentParagraph> txtFileTextExtract2Paragraphs(InputStream is) throws IOException {
+        String textContent = txtFileTextExtract(is);
         List<DocumentParagraph> paragraphs = null;
-        int p = 1;
         try {
-            paragraphs = new ArrayList<>();
-            iir = new InputStreamReader(is);
-            br = new BufferedReader(iir);
-            // 全文拼接为一行, 按中文终止符拆分
-            String spliceStr = br.lines().filter(ContentHelper::hasText).collect(Collectors.joining(" "));
-            paragraphs = getDocumentParagraphs(spliceStr, " ", DEFAULT_THRESHOLD);
+            paragraphs = getDocumentParagraphs(textContent, " ", DEFAULT_THRESHOLD);
         } catch (Exception e) {
-            mark = e;
-        } finally {
-            if (br != null)
-                br.close();
+            throw new ContentExtractFailureException(e.getMessage(), e);
         }
-
-        if (mark != null)
-            throw mark;
-        return getPrunedParagraphs(DEFAULT_THRESHOLD, DEFAULT_FACTOR, paragraphs);
+        return paragraphs;
     }
 
     /**
