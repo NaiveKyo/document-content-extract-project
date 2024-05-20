@@ -202,6 +202,11 @@ public class DocumentTextSplitter {
                 }
                 // 使用其他合适的分割符递归处理较长的子串
                 List<String> recursive = split(s);
+                // fix: 注意这里会丢失当前处理串的隔离符
+                if (!recursive.isEmpty()) {
+                    int size = recursive.size();
+                    recursive.set(size - 1, recursive.get(size - 1) + segment.delimiter);
+                }
                 chunks.addAll(recursive);
             }
         }
