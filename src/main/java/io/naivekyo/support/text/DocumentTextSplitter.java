@@ -12,7 +12,6 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -170,21 +169,30 @@ public class DocumentTextSplitter {
             Pattern pat = Pattern.compile("(" + Matcher.quoteReplacement(sep) + ")");
             String[] splits = pat.split(text);
             Matcher mat = pat.matcher(text);
-            if (splits.length != 0) {
-                int i = 0;
-                while (mat.find()) {
-                    if (splits[i].length() != 0)
-                        segments.add(new Segment(mat.group(), splits[i]));
-                    i++;
+            boolean canFind = false;
+            int cursor = 0;
+            while (mat.find()) {
+                canFind = true;
+                if (splits.length != 0) {
+                    if (cursor < splits.length) {
+                        String tmp = splits[cursor++].trim();
+                        if (tmp.length() != 0)
+                            segments.add(new Segment(mat.group(1), tmp));
+                    }
                 }
-                if (i == splits.length - 1)
-                    segments.add(new Segment("", splits[i]));
-            } else {
-                log.warn("separator: {}, regex: ({}), regex can't use separator to split origin text", sep, sep);
-                segments = Arrays.stream(text.split(sep)).map(s -> Segment.of("", s)).collect(Collectors.toList());
             }
-        } else
-            segments = Arrays.stream(text.split(sep)).map(s -> Segment.of("", s)).collect(Collectors.toList());
+            if (!canFind) {
+                // 没法使用正则表达式进行分割, 则按字数截断
+                segments = normalTruncation(text);
+            } else {
+                while (cursor < splits.length) {
+                    // 处理可能遗漏的数据
+                    segments.add(new Segment("", splits[cursor++]));
+                }
+            }
+        } else {
+            segments = normalTruncation(text);
+        }
 
         // 收集长度小于 chunkLen 的字符串集合
         List<Segment> tmpSegments = new ArrayList<>();
@@ -217,6 +225,23 @@ public class DocumentTextSplitter {
         }
         
         return chunks;
+    }
+
+    private List<Segment> normalTruncation(String text) {
+        int len = text.length();
+        // 考虑到后续可能存在的重叠, 此处分割片段长度尽量短一些
+        int interval = chunkLen / 2;
+        int fragment = len % interval == 0 ? (len / interval) : (len / interval + 1);
+        List<Segment> segmentList = new ArrayList<>(fragment + fragment >> 1);
+        for (int i = 0; i < fragment; i++) {
+            String tmp;
+            if (i == fragment - 1)
+                tmp = text.substring(interval * i);
+            else
+                tmp = text.substring(interval * i, interval * (i + 1));
+            segmentList.add(Segment.of("", tmp));
+        }
+        return segmentList;
     }
     
     private List<String> merge(List<Segment> segments) {
